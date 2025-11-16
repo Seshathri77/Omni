@@ -1,0 +1,6 @@
+@Yath.TripService_HostAddress = http://localhost:5191
+
+GET {{Yath.TripService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

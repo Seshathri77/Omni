@@ -1,0 +1,294 @@
+services:
+  # Infrastructure Services
+  
+  mongodb:
+    image: mongo:7.0
+    container_name: yath-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - yath-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: yath-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - yath-network
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  seq:
+    image: datalust/seq:latest
+    container_name: yath-seq
+    ports:
+      - "5341:80"
+    environment:
+      ACCEPT_EULA: Y
+      SEQ_FIRSTRUN_ADMINPASSWORD: Admin123!
+    volumes:
+      - seq_data:/data
+    networks:
+      - yath-network
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: yath-azurite
+    ports:
+      - "10000:10000"  # Blob service
+      - "10001:10001"  # Queue service
+      - "10002:10002"  # Table service
+    volumes:
+      - azurite_data:/data
+    networks:
+      - yath-network
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
+
+  # Yath Microservices
+
+  user-service:
+    build:
+      context: ..
+      dockerfile: Yath/Yath.UserService/Yath.UserService/Dockerfile
+    container_name: yath-user-service
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__MongoDb=mongodb://admin:admin123@mongodb:27017
+      - Jwt__Secret=Yath_JWT_SecretKey_2024_P@ssw0rd!_32BytesMinimum_ForProduction_UseEnvVarsInProd
+      - Jwt__Issuer=YathAuthService
+      - Jwt__Audience=YathUsers
+      - Jwt__ExpiryMinutes=1440
+      - Serilog__WriteTo__1__Args__serverUrl=http://seq:80
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      seq:
+        condition: service_started
+    networks:
+      - yath-network
+    restart: unless-stopped
+
+  trip-service:
+    build:
+      context: ..
+      dockerfile: Yath/Yath.TripService/Yath.TripService/Dockerfile
+    container_name: yath-trip-service
+    ports:
+      - "5001:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__MongoDb=mongodb://admin:admin123@mongodb:27017
+      - Jwt__Secret=Yath_JWT_SecretKey_2024_P@ssw0rd!_32BytesMinimum_ForProduction_UseEnvVarsInProd
+      - Jwt__Issuer=YathAuthService
+      - Jwt__Audience=YathUsers
+      - Jwt__ExpiryMinutes=1440
+      - Serilog__WriteTo__1__Args__serverUrl=http://seq:80
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      seq:
+        condition: service_started
+      user-service:
+        condition: service_started
+    networks:
+      - yath-network
+    restart: unless-stopped
+
+  activity-service:
+    build:
+      context: ..
+      dockerfile: Yath/Yath.ActivityService/Yath.ActivityService/Dockerfile
+    container_name: yath-activity-service
+    ports:
+      - "5002:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__MongoDb=mongodb://admin:admin123@mongodb:27017
+      - Jwt__Secret=Yath_JWT_SecretKey_2024_P@ssw0rd!_32BytesMinimum_ForProduction_UseEnvVarsInProd
+      - Jwt__Issuer=YathAuthService
+      - Jwt__Audience=YathUsers
+      - Jwt__ExpiryMinutes=1440
+      - Serilog__WriteTo__1__Args__serverUrl=http://seq:80
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      seq:
+        condition: service_started
+      user-service:
+        condition: service_started
+    networks:
+      - yath-network
+    restart: unless-stopped
+
+  expense-service:
+    build:
+      context: ..
+      dockerfile: Yath/Yath.ExpenseService/Yath.ExpenseService/Dockerfile
+    container_name: yath-expense-service
+    ports:
+      - "5003:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__MongoDb=mongodb://admin:admin123@mongodb:27017
+      - Jwt__Secret=Yath_JWT_SecretKey_2024_P@ssw0rd!_32BytesMinimum_ForProduction_UseEnvVarsInProd
+      - Jwt__Issuer=YathAuthService
+      - Jwt__Audience=YathUsers
+      - Jwt__ExpiryMinutes=1440
+      - Serilog__WriteTo__1__Args__serverUrl=http://seq:80
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      seq:
+        condition: service_started
+      trip-service:
+        condition: service_started
+    networks:
+      - yath-network
+    restart: unless-stopped
+
+  media-service:
+    build:
+      context: ..
+      dockerfile: Yath/Yath.MediaService/Yath.MediaService/Dockerfile
+    container_name: yath-media-service
+    ports:
+      - "5004:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__MongoDb=mongodb://admin:admin123@mongodb:27017
+      - ConnectionStrings__AzureStorage=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;
+      - BlobStorage__ContainerName=yath-media
+      - Jwt__Secret=Yath_JWT_SecretKey_2024_P@ssw0rd!_32BytesMinimum_ForProduction_UseEnvVarsInProd
+      - Jwt__Issuer=YathAuthService
+      - Jwt__Audience=YathUsers
+      - Jwt__ExpiryMinutes=1440
+      - Serilog__WriteTo__1__Args__serverUrl=http://seq:80
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      azurite:
+        condition: service_started
+      seq:
+        condition: service_started
+    networks:
+      - yath-network
+    restart: unless-stopped
+
+  chat-service:
+    build:
+      context: ..
+      dockerfile: Yath/Yath.ChatService/Yath.ChatService/Dockerfile
+    container_name: yath-chat-service
+    ports:
+      - "5005:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__MongoDb=mongodb://admin:admin123@mongodb:27017
+      - Jwt__Secret=Yath_JWT_SecretKey_2024_P@ssw0rd!_32BytesMinimum_ForProduction_UseEnvVarsInProd
+      - Jwt__Issuer=YathAuthService
+      - Jwt__Audience=YathUsers
+      - Jwt__ExpiryMinutes=1440
+      - Serilog__WriteTo__1__Args__serverUrl=http://seq:80
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      seq:
+        condition: service_started
+      trip-service:
+        condition: service_started
+    networks:
+      - yath-network
+    restart: unless-stopped
+
+  location-service:
+    build:
+      context: ..
+      dockerfile: Yath/Yath.LocationService/Yath.LocationService/Dockerfile
+    container_name: yath-location-service
+    ports:
+      - "5006:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__MongoDb=mongodb://admin:admin123@mongodb:27017
+      - Jwt__Secret=Yath_JWT_SecretKey_2024_P@ssw0rd!_32BytesMinimum_ForProduction_UseEnvVarsInProd
+      - Jwt__Issuer=YathAuthService
+      - Jwt__Audience=YathUsers
+      - Jwt__ExpiryMinutes=1440
+      - Serilog__WriteTo__1__Args__serverUrl=http://seq:80
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      seq:
+        condition: service_started
+      trip-service:
+        condition: service_started
+    networks:
+      - yath-network
+    restart: unless-stopped
+
+  notification-service:
+    build:
+      context: ..
+      dockerfile: Yath/Yath.NotificationService/Yath.NotificationService/Dockerfile
+    container_name: yath-notification-service
+    ports:
+      - "5007:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__MongoDb=mongodb://admin:admin123@mongodb:27017
+      - Jwt__Secret=Yath_JWT_SecretKey_2024_P@ssw0rd!_32BytesMinimum_ForProduction_UseEnvVarsInProd
+      - Jwt__Issuer=YathAuthService
+      - Jwt__Audience=YathUsers
+      - Jwt__ExpiryMinutes=1440
+      - Firebase__CredentialsPath=/app/firebase-adminsdk.json
+      - Serilog__WriteTo__1__Args__serverUrl=http://seq:80
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      seq:
+        condition: service_started
+    networks:
+      - yath-network
+    restart: unless-stopped
+    volumes:
+      - ./Yath.NotificationService/Yath.NotificationService/firebase-adminsdk.json:/app/firebase-adminsdk.json:ro
+
+networks:
+  yath-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  rabbitmq_data:
+  seq_data:
+  azurite_data:

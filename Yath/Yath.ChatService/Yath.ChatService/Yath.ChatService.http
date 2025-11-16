@@ -1,0 +1,6 @@
+@Yath.ChatService_HostAddress = http://localhost:5096
+
+GET {{Yath.ChatService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

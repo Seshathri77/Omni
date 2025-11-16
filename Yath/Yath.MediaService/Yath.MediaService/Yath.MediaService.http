@@ -1,0 +1,6 @@
+@Yath.MediaService_HostAddress = http://localhost:5215
+
+GET {{Yath.MediaService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
