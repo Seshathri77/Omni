@@ -11,22 +11,8 @@ public class PostRepository : IPostRepository
     {
         _posts = database.GetCollection<Post>("posts");
 
-        // Create indexes
-        var postIdIndex = Builders<Post>.IndexKeys.Ascending(p => p.PostId);
-        _posts.Indexes.CreateOne(new CreateIndexModel<Post>(postIdIndex,
-            new CreateIndexOptions { Unique = true }));
-
-        var userIdIndex = Builders<Post>.IndexKeys.Ascending(p => p.UserId);
-        _posts.Indexes.CreateOne(new CreateIndexModel<Post>(userIdIndex));
-
-        var tripIdIndex = Builders<Post>.IndexKeys.Ascending(p => p.TripId);
-        _posts.Indexes.CreateOne(new CreateIndexModel<Post>(tripIdIndex));
-
-        var tagsIndex = Builders<Post>.IndexKeys.Ascending(p => p.Tags);
-        _posts.Indexes.CreateOne(new CreateIndexModel<Post>(tagsIndex));
-
-        var createdAtIndex = Builders<Post>.IndexKeys.Descending(p => p.CreatedAt);
-        _posts.Indexes.CreateOne(new CreateIndexModel<Post>(createdAtIndex));
+        // Note: Indexes should be created asynchronously after startup or via migrations
+        // Creating indexes here can cause timeout issues with MongoDB Atlas in containerized environments
     }
 
     public async Task<Post?> GetByIdAsync(string postId)

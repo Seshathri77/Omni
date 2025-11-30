@@ -22,7 +22,7 @@ Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .Enrich.WithProperty("ServiceName", "ExpenseService")
     .WriteTo.Console()
-    .WriteTo.Seq(builder.Configuration["Seq:ServerUrl"] ?? "http://localhost:5341")
+    .WriteTo.Seq(builder.Configuration["Seq:Url"] ?? "http://localhost:5341")
     .CreateLogger();
 
 builder.Host.UseSerilog();

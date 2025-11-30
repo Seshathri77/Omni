@@ -1,0 +1,49 @@
+﻿---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trip-service
+  namespace: yath
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trip-service
+  template:
+    metadata:
+      labels:
+        app: trip-service
+    spec:
+      imagePullSecrets:
+      - name: acr-secret
+      containers:
+      - name: trip-service
+        image: yathregistry.azurecr.io/yath-trip-service:latest
+        ports:
+        - containerPort: 80
+          name: http
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Production"
+        - name: ASPNETCORE_URLS
+          value: "http://+:80"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trip-service
+  namespace: yath
+spec:
+  selector:
+    app: trip-service
+  ports:
+  - port: 80
+    targetPort: 80
+  type: LoadBalancer

@@ -10,7 +10,7 @@ public class NotificationRepository : INotificationRepository
     public NotificationRepository(IMongoDatabase database)
     {
         _collection = database.GetCollection<Notification>("notifications");
-        CreateIndexes();
+        // Index creation removed - should be done via migration or startup task
     }
 
     private void CreateIndexes()

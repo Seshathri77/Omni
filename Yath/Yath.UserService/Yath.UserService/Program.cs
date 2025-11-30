@@ -60,8 +60,8 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Configure JWT Authentication
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured");
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var secretKey = jwtSettings["Secret"] ?? throw new InvalidOperationException("JWT Secret not configured");
 
 builder.Services.AddAuthentication(options =>
 {
@@ -114,24 +114,17 @@ builder.Services.AddOmniFlowObservability("user-service", enablePrometheusExport
 builder.Services.AddMongoDbIdempotency(mongoConnectionString, mongoDatabaseName);
 builder.Services.AddMongoDbSagaRepository<UserRegistrationSagaState>(mongoConnectionString, mongoDatabaseName);
 
-// Use RabbitMQ for messaging (will switch to Azure Service Bus in production)
-var rabbitMqHost = builder.Configuration["RabbitMQ:Host"] ?? "localhost";
-builder.Services.AddRabbitMQMessageBus(options =>
-{
-    options.HostName = rabbitMqHost;
-    options.UserName = builder.Configuration["RabbitMQ:UserName"] ?? "guest";
-    options.Password = builder.Configuration["RabbitMQ:Password"] ?? "guest";
-});
+// Use in-memory message bus for Azure deployment (RabbitMQ not available)
+builder.Services.AddOmniFlowMessaging(  ); // Uses in-memory message bus by default
 
 // Add CORS
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
+    options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? new[] { "*" })
+        policy.AllowAnyOrigin()
               .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials();
+              .AllowAnyHeader();
     });
 });
 
@@ -146,18 +139,23 @@ if (app.Environment.IsDevelopment())
 
 app.UseSerilogRequestLogging();
 
-app.UseCors();
+app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-// Map Prometheus metrics endpoint
-app.UsePrometheusScrapingEndpoint();
+app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "Yath.ActivityService" }));
 
-// Subscribe to events (if needed for this service)
+app.MapGet("/metrics", () =>
+{
+    var metrics = new { service = "Yath.UserService", status = "available" };
+    return Results.Ok(metrics);
+});
+
+// Subscribe to events
 var messageBus = app.Services.GetRequiredService<IMessageBus>();
-// Add event subscriptions here if needed
 
+Log.Information("Yath.UserService started on {Environment}", app.Environment.EnvironmentName);
 app.Run();

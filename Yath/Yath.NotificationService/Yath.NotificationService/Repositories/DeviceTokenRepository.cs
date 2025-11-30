@@ -17,13 +17,13 @@ public class DeviceTokenRepository : IDeviceTokenRepository
     {
         var indexKeys = Builders<DeviceToken>.IndexKeys;
 
-        // Index on tokenId (unique)
-        _collection.Indexes.CreateOne(
-            new CreateIndexModel<DeviceToken>(
-                indexKeys.Ascending(t => t.TokenId),
-                new CreateIndexOptions { Unique = true }
-            )
-        );
+        // // Index on tokenId (unique)
+        // _collection.Indexes.CreateOne(
+        //     new CreateIndexModel<DeviceToken>(
+        //         indexKeys.Ascending(t => t.TokenId),
+        //         new CreateIndexOptions { Unique = true }
+        //     )
+        // );
 
         // Index on token (unique)
         _collection.Indexes.CreateOne(

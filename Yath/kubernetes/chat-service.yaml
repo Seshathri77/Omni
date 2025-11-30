@@ -1,0 +1,49 @@
+﻿---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat-service
+  namespace: yath
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chat-service
+  template:
+    metadata:
+      labels:
+        app: chat-service
+    spec:
+      imagePullSecrets:
+      - name: acr-secret
+      containers:
+      - name: chat-service
+        image: yathregistry.azurecr.io/yath-chat-service:latest
+        ports:
+        - containerPort: 80
+          name: http
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Production"
+        - name: ASPNETCORE_URLS
+          value: "http://+:80"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat-service
+  namespace: yath
+spec:
+  selector:
+    app: chat-service
+  ports:
+  - port: 80
+    targetPort: 80
+  type: LoadBalancer

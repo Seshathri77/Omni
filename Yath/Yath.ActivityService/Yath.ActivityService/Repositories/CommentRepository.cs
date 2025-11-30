@@ -11,16 +11,8 @@ public class CommentRepository : ICommentRepository
     {
         _comments = database.GetCollection<Comment>("comments");
 
-        // Create indexes
-        var commentIdIndex = Builders<Comment>.IndexKeys.Ascending(c => c.CommentId);
-        _comments.Indexes.CreateOne(new CreateIndexModel<Comment>(commentIdIndex,
-            new CreateIndexOptions { Unique = true }));
-
-        var postIdIndex = Builders<Comment>.IndexKeys.Ascending(c => c.PostId);
-        _comments.Indexes.CreateOne(new CreateIndexModel<Comment>(postIdIndex));
-
-        var parentCommentIndex = Builders<Comment>.IndexKeys.Ascending(c => c.ParentCommentId);
-        _comments.Indexes.CreateOne(new CreateIndexModel<Comment>(parentCommentIndex));
+        // Note: Indexes should be created asynchronously after startup or via migrations
+        // Creating indexes here can cause timeout issues with MongoDB Atlas in containerized environments
     }
 
     public async Task<Comment?> GetByIdAsync(string commentId)

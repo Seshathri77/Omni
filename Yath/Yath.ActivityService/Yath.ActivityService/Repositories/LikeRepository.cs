@@ -11,15 +11,8 @@ public class LikeRepository : ILikeRepository
     {
         _likes = database.GetCollection<Like>("likes");
 
-        // Create compound unique index on postId and userId
-        var compoundIndex = Builders<Like>.IndexKeys
-            .Ascending(l => l.PostId)
-            .Ascending(l => l.UserId);
-        _likes.Indexes.CreateOne(new CreateIndexModel<Like>(compoundIndex,
-            new CreateIndexOptions { Unique = true }));
-
-        var postIdIndex = Builders<Like>.IndexKeys.Ascending(l => l.PostId);
-        _likes.Indexes.CreateOne(new CreateIndexModel<Like>(postIdIndex));
+        // Note: Indexes should be created asynchronously after startup or via migrations
+        // Creating indexes here can cause timeout issues with MongoDB Atlas in containerized environments
     }
 
     public async Task<Like?> GetAsync(string postId, string userId)

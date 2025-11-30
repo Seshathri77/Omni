@@ -1,0 +1,49 @@
+﻿---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: location-service
+  namespace: yath
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: location-service
+  template:
+    metadata:
+      labels:
+        app: location-service
+    spec:
+      imagePullSecrets:
+      - name: acr-secret
+      containers:
+      - name: location-service
+        image: yathregistry.azurecr.io/yath-location-service:latest
+        ports:
+        - containerPort: 80
+          name: http
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Production"
+        - name: ASPNETCORE_URLS
+          value: "http://+:80"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: location-service
+  namespace: yath
+spec:
+  selector:
+    app: location-service
+  ports:
+  - port: 80
+    targetPort: 80
+  type: LoadBalancer
