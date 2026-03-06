@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OmniFlow.Idempotency;
 using OmniFlow.Sagas;
+using OmniFlow.Messaging;
 
 namespace OmniFlow.Adapters.Sql;
 
@@ -20,8 +21,12 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<OmniFlowDbContext>(options =>
             options.UseSqlServer(connectionString));
 
+        // Register DbContext as ISagaDbContext for timer and lock services
+        services.AddScoped<ISagaDbContext>(sp => sp.GetRequiredService<OmniFlowDbContext>());
+
         services.AddScoped(typeof(ISagaRepository<>), typeof(SqlSagaRepository<>));
         services.AddScoped<IIdempotencyStore, SqlIdempotencyStore>();
+        services.AddScoped<IDeadLetterQueueStore, SqlDeadLetterQueueStore>();
 
         return services;
     }

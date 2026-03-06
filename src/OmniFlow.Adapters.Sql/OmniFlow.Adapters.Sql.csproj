@@ -15,6 +15,7 @@
     <ProjectReference Include="..\OmniFlow.Core\OmniFlow.Core.csproj" />
     <ProjectReference Include="..\OmniFlow.Sagas\OmniFlow.Sagas.csproj" />
     <ProjectReference Include="..\OmniFlow.Idempotency\OmniFlow.Idempotency.csproj" />
+    <ProjectReference Include="..\OmniFlow.Messaging\OmniFlow.Messaging.csproj" />
   </ItemGroup>
 
   <ItemGroup>

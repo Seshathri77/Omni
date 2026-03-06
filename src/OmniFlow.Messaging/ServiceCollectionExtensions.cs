@@ -50,6 +50,23 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
+
+    /// <summary>
+    /// Adds Dead Letter Queue processing with automatic retry.
+    /// Requires IDeadLetterQueueStore to be registered (e.g., via AddOmniFlowSqlAdapters).
+    /// </summary>
+    public static IServiceCollection AddDeadLetterQueueProcessor(
+        this IServiceCollection services,
+        Action<DeadLetterQueueOptions>? configure = null)
+    {
+        var options = new DeadLetterQueueOptions();
+        configure?.Invoke(options);
+
+        services.AddSingleton(options);
+        services.AddHostedService<DeadLetterQueueProcessor>();
+
+        return services;
+    }
 }
 
 /// <summary>

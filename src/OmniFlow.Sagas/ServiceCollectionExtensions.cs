@@ -14,7 +14,40 @@ public static class ServiceCollectionExtensions
     {
         services.AddSingleton(typeof(ISagaRepository<>), typeof(InMemorySagaRepository<>));
         services.AddSingleton<ITimerService, InMemoryTimerService>();
+        services.AddSingleton<IDistributedLock, InMemoryDistributedLock>();
         
+        return services;
+    }
+
+    /// <summary>
+    /// Adds SQL-based durable timer service with background processing.
+    /// Requires ISagaDbContext to be registered (e.g., via AddOmniFlowSqlAdapters).
+    /// </summary>
+    public static IServiceCollection AddSqlTimerService(this IServiceCollection services)
+    {
+        services.AddSingleton<ITimerService, SqlTimerService>();
+        services.AddHostedService<SqlTimerService>(sp => sp.GetRequiredService<ITimerService>() as SqlTimerService 
+            ?? throw new InvalidOperationException("SqlTimerService not registered"));
+        
+        return services;
+    }
+
+    /// <summary>
+    /// Adds SQL-based distributed lock for saga coordination.
+    /// Requires ISagaDbContext to be registered (e.g., via AddOmniFlowSqlAdapters).
+    /// </summary>
+    public static IServiceCollection AddSqlDistributedLock(this IServiceCollection services)
+    {
+        services.AddSingleton<IDistributedLock, SqlDistributedLock>();
+        return services;
+    }
+
+    /// <summary>
+    /// Adds in-memory distributed lock (for development/testing).
+    /// </summary>
+    public static IServiceCollection AddInMemoryDistributedLock(this IServiceCollection services)
+    {
+        services.AddSingleton<IDistributedLock, InMemoryDistributedLock>();
         return services;
     }
 
