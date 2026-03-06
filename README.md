@@ -31,19 +31,22 @@ A comprehensive .NET 8 framework for building resilient, observable microservice
 ```
 OmniFlow.sln
 ├── src/
-│   ├── OmniFlow.Core              # Core primitives (correlation, envelope, context)
-│   ├── OmniFlow.Messaging         # Message bus abstraction + middleware pipeline
-│   ├── OmniFlow.Sagas             # Saga orchestration engine
-│   ├── OmniFlow.Idempotency       # Idempotency store abstractions
-│   ├── OmniFlow.Observability     # OpenTelemetry & Serilog integration
-│   ├── OmniFlow.Adapters.RabbitMQ # RabbitMQ message bus implementation
-│   ├── OmniFlow.Adapters.Sql      # SQL-based persistence adapters
-│   └── OmniFlow.Tools.Cli         # CLI for saga inspection
+│   ├── OmniFlow.Core                  # Core primitives (correlation, envelope, context)
+│   ├── OmniFlow.Messaging             # Message bus abstraction + middleware pipeline
+│   ├── OmniFlow.Sagas                 # Saga orchestration engine
+│   ├── OmniFlow.Idempotency           # Idempotency store abstractions
+│   ├── OmniFlow.Observability         # OpenTelemetry & Serilog integration
+│   ├── OmniFlow.Adapters.RabbitMQ     # RabbitMQ message bus implementation
+│   ├── OmniFlow.Adapters.Kafka        # Apache Kafka message bus implementation
+│   ├── OmniFlow.Adapters.AzureServiceBus  # Azure Service Bus implementation
+│   ├── OmniFlow.Adapters.Sql          # SQL-based persistence adapters
+│   ├── OmniFlow.Adapters.MongoDb      # MongoDB persistence adapters
+│   └── OmniFlow.Tools.Cli             # CLI for saga inspection
 ├── samples/
-│   ├── OrdersService              # Example: Order processing with saga
-│   └── PaymentsService            # Example: Payment processing service
+│   ├── OrdersService                  # Example: Order processing with saga
+│   └── PaymentsService                # Example: Payment processing service
 └── tests/
-    └── OmniFlow.Tests             # Unit tests for all components
+    └── OmniFlow.Tests                 # Unit tests for all components
 ```
 
 ## Quick Start
@@ -199,20 +202,285 @@ Correlation IDs automatically added to logs:
 
 ## Adapters
 
-### RabbitMQ
+OmniFlow provides multiple message bus adapters for different scenarios:
 
+### In-Memory (Development)
+
+Default adapter for development and testing:
+```csharp
+services.AddOmniFlowMessaging(); // Uses InMemoryMessageBus
+```
+
+### RabbitMQ (Production)
+
+Enterprise messaging with RabbitMQ:
 ```csharp
 services.AddRabbitMQMessageBus(options =>
 {
     options.HostName = "localhost";
     options.ExchangeName = "omniflow";
+    options.ServiceName = "my-service";
 });
 ```
 
+**Best for**: Traditional microservices, reliable message delivery
+
+[📖 RabbitMQ Adapter Documentation](src/OmniFlow.Adapters.RabbitMQ/README.md)
+
+### Apache Kafka (High Throughput)
+
+High-performance event streaming with Kafka:
+```csharp
+services.AddKafkaMessageBus(options =>
+{
+    options.BootstrapServers = "localhost:9092";
+    options.ConsumerGroupId = "my-service-group";
+    options.TopicPrefix = "prod";
+});
+```
+
+**Best for**: Event streaming, high-volume messaging, event sourcing
+
+[📖 Kafka Adapter Documentation](src/OmniFlow.Adapters.Kafka/README.md)
+
+### Azure Service Bus (Cloud-Native)
+
+Fully managed Azure messaging with advanced features:
+```csharp
+services.AddAzureServiceBusMessageBus(options =>
+{
+    options.FullyQualifiedNamespace = "mybus.servicebus.windows.net";
+    options.TopicName = "omniflow";
+    options.EnableSessions = true; // For ordered processing
+});
+```
+
+**Best for**: Azure cloud deployments, session-based ordering, managed infrastructure
+
+[📖 Azure Service Bus Adapter Documentation](src/OmniFlow.Adapters.AzureServiceBus/README.md)
+
 ### SQL Persistence
 
+Store saga state and idempotency records in SQL:
 ```csharp
 services.AddOmniFlowSqlAdapters(connectionString);
+```
+
+### MongoDB Persistence
+
+NoSQL alternative for saga state storage:
+```csharp
+services.AddMongoDbSagaRepository(options =>
+{
+    options.ConnectionString = "mongodb://localhost:27017";
+    options.DatabaseName = "omniflow";
+});
+```
+
+### Adapter Comparison
+
+| Adapter | Throughput | Durability | Ordering | Use Case |
+|---------|------------|------------|----------|----------|
+| In-Memory | Very High | ❌ None | ✅ | Development, Testing |
+| RabbitMQ | Medium | ✅ Disk | ⚠️ Per Queue | Microservices |
+| Kafka | Very High | ✅ Replicated | ✅ Per Partition | Event Streaming |
+| Azure Service Bus | High | ✅ Cloud | ✅ Sessions | Azure Cloud |
+
+## 🎯 Production-Ready Features
+
+OmniFlow includes critical features required for production deployments:
+
+### Saga Timeouts & Durable Timers
+
+Prevent sagas from getting stuck indefinitely using durable timers that survive service restarts:
+
+```csharp
+public class OrderSaga : Saga<OrderSagaState>
+{
+    protected override async Task OnStartAsync(CancellationToken ct)
+    {
+        // Schedule timeout - saga will receive SagaTimerFired event after 30 minutes
+        var timerId = await ScheduleTimerAsync(
+            TimeSpan.FromMinutes(30), 
+            "PaymentTimeout", 
+            ct);
+        
+        State.PaymentTimeoutId = timerId;
+        
+        await PublishAsync(new RequestPayment(State.OrderId, State.Amount), ct);
+    }
+
+    public async Task HandlePaymentSucceeded(PaymentSucceeded evt, CancellationToken ct)
+    {
+        // Cancel timeout since payment succeeded
+        await CancelTimerAsync(State.PaymentTimeoutId, ct);
+        await CompleteAsync(ct);
+    }
+
+    public async Task HandleSagaTimerFired(SagaTimerFired evt, CancellationToken ct)
+    {
+        if (evt.TimerName == "PaymentTimeout")
+        {
+            await CompensateAsync("Payment timed out after 30 minutes", ct);
+        }
+    }
+}
+```
+
+**Configuration:**
+```csharp
+// Add SQL-based durable timer service (survives restarts)
+services.AddOmniFlowSqlAdapters(connectionString);
+services.AddSqlTimerService();
+```
+
+### Distributed Locks
+
+Prevent duplicate saga starts across multiple service instances:
+
+```csharp
+public class OrderSaga : Saga<OrderSagaState>
+{
+    private IDistributedLock _lock = null!;
+
+    public void Initialize(ISagaRepository<OrderSagaState> repository,
+                          IMessageBus messageBus,
+                          IDistributedLock distributedLock)
+    {
+        base.Initialize(repository, messageBus);
+        _lock = distributedLock;
+    }
+
+    public async Task HandleOrderCreated(OrderCreated evt, CancellationToken ct)
+    {
+        // Acquire lock with 5-minute timeout
+        await using var lockHandle = await _lock.AcquireAsync(
+            $"saga:order:{evt.OrderId}", 
+            TimeSpan.FromMinutes(5), 
+            ct);
+
+        if (lockHandle == null)
+        {
+            // Another instance is already processing this order
+            return;
+        }
+
+        // Start saga - lock released automatically on dispose
+        if (!await LoadAsync(evt.OrderId, ct))
+        {
+            await StartAsync(evt.OrderId, ct);
+        }
+    }
+}
+```
+
+**Configuration:**
+```csharp
+// SQL-based distributed lock (multi-instance coordination)
+services.AddSqlDistributedLock();
+
+// OR in-memory for development
+services.AddInMemoryDistributedLock();
+```
+
+### Dead Letter Queue Processing
+
+Automatically retry failed messages with exponential backoff:
+
+```csharp
+// Register DLQ processor
+services.AddDeadLetterQueueProcessor(options =>
+{
+    options.MaxRetries = 3;
+    options.InitialRetryDelay = TimeSpan.FromMinutes(1);
+    options.MaxRetryDelay = TimeSpan.FromHours(1);
+    options.AlertWebhookUrl = "https://alerts.mycompany.com/webhook";
+});
+
+// Store DLQ messages in SQL
+services.AddOmniFlowSqlAdapters(connectionString);
+```
+
+The DLQ processor:
+- ✅ Automatically retries failed messages with exponential backoff (1m → 5m → 15m → 1h)
+- ✅ Tracks retry attempts and failure reasons
+- ✅ Sends alerts when messages exhaust all retries
+- ✅ Publishes `DeadLetterMessageExhaustionAlert` events for monitoring
+
+**Message Flow:**
+```
+Message Fails → DLQ Store → Retry #1 (after 1 min)
+                    ↓
+                Retry #2 (after 5 min)
+                    ↓
+                Retry #3 (after 15 min)
+                    ↓
+            Exhausted → Alert Webhook
+```
+
+### Database Schema
+
+Apply migrations for critical features:
+
+```bash
+# Generate migration (if using EF CLI)
+dotnet ef migrations add AddCriticalFeatures --project src/OmniFlow.Adapters.Sql
+
+# Or use the pre-created migration
+dotnet ef database update --project src/OmniFlow.Adapters.Sql
+```
+
+**Tables Created:**
+- `SagaTimers` - Durable timer storage
+- `DistributedLocks` - Lock coordination records  
+- `DeadLetterQueue` - Failed message storage and retry metadata
+
+### Production Configuration Example
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+
+// Core services
+builder.Services.AddOmniFlowCore();
+builder.Services.AddOmniFlowMessaging();
+builder.Services.AddOmniFlowSagas();
+builder.Services.AddOmniFlowObservability("OrdersService");
+
+// Production persistence
+var sqlConnection = builder.Configuration.GetConnectionString("OmniFlow");
+builder.Services.AddOmniFlowSqlAdapters(sqlConnection);
+
+// Critical production features
+builder.Services.AddSqlTimerService();           // Saga timeouts
+builder.Services.AddSqlDistributedLock();        // Multi-instance coordination
+builder.Services.AddDeadLetterQueueProcessor();  // Failed message retry
+
+// Message bus adapter
+builder.Services.AddRabbitMQMessageBus(opts => 
+{
+    opts.HostName = "rabbitmq.production.local";
+    opts.ExchangeName = "omniflow-prod";
+});
+
+// Register sagas
+builder.Services.AddSaga<OrderSaga, OrderSagaState>();
+
+var app = builder.Build();
+
+// Subscribe to events
+var messageBus = app.Services.GetRequiredService<IMessageBus>();
+await messageBus.SubscribeAsync<OrderCreated>(async (envelope, ctx) =>
+{
+    using var scope = app.Services.CreateScope();
+    var saga = scope.ServiceProvider.GetRequiredService<OrderSaga>();
+    var repository = scope.ServiceProvider.GetRequiredService<ISagaRepository<OrderSagaState>>();
+    var distributedLock = scope.ServiceProvider.GetRequiredService<IDistributedLock>();
+    
+    saga.Initialize(repository, messageBus, distributedLock);
+    await saga.HandleOrderCreated(envelope.Message, ctx.CancellationToken);
+});
+
+await app.RunAsync();
 ```
 
 ## Testing

@@ -143,6 +143,29 @@ public abstract class Saga<TState> where TState : SagaState, new()
     }
 
     /// <summary>
+    /// Cancels a previously scheduled timer.
+    /// </summary>
+    protected async Task CancelTimerAsync(string timerId, CancellationToken cancellationToken = default)
+    {
+        if (TimerService == null)
+            throw new InvalidOperationException("TimerService not configured");
+
+        await TimerService.CancelAsync(timerId, cancellationToken);
+        AddHistory($"Cancelled timer {timerId}");
+    }
+
+    /// <summary>
+    /// Gets all timers for this saga.
+    /// </summary>
+    protected async Task<IEnumerable<TimerInfo>> GetTimersAsync(CancellationToken cancellationToken = default)
+    {
+        if (TimerService == null)
+            throw new InvalidOperationException("TimerService not configured");
+
+        return await TimerService.GetTimersAsync(State.SagaId, cancellationToken);
+    }
+
+    /// <summary>
     /// Override to handle saga start logic.
     /// </summary>
     protected virtual Task OnStartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
