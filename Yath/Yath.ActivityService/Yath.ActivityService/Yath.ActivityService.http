@@ -1,6 +1,0 @@
-@Yath.ActivityService_HostAddress = http://localhost:5155
-
-GET {{Yath.ActivityService_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
