@@ -1,88 +1,104 @@
-# OmniFlow.Framework
+﻿# 🌊 OmniFlow Framework
 
-A comprehensive .NET 8 framework for building resilient, observable microservices with built-in support for saga orchestration, distributed tracing, and idempotent message processing.
+[![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/download)
+[![C#](https://img.shields.io/badge/C%23-12.0-blue.svg)](https://docs.microsoft.com/en-us/dotnet/csharp/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/Seshathri77/Omni)
 
-[![.NET 8](https://img.shields.io/badge/.NET-8.0-purple)](https://dotnet.microsoft.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+**OmniFlow** is a production-ready microservices framework for .NET 8 that provides saga orchestration, distributed tracing, and resilient message-driven architecture with enterprise-grade features.
 
-## 🚀 Features
+---
 
-- **🔗 Correlation & Distributed Tracing**: Automatic correlation ID propagation with OpenTelemetry/Jaeger
-- **🔄 Saga Orchestration**: Durable saga engine with compensation logic for distributed transactions
-- **📨 Pluggable Message Bus**: Abstract message bus with in-memory and RabbitMQ adapters
-- **✅ Idempotency**: Built-in middleware to prevent duplicate message processing
-- **📊 Observability**: OpenTelemetry traces, Prometheus metrics, and Serilog structured logging
-- **🛡️ Resilience**: Polly-based retry policies and circuit breakers
-- **📦 Schema Evolution**: Message versioning support for schema migration
-- **🔐 Message Signing**: HMAC-based message authentication and validation
+## 📋 Table of Contents
 
-## 📖 Documentation
+- [Features](#-features)
+- [Installation](#-installation)
+- [Quick Start](#-quick-start)
+- [Configuration](#-configuration)
+- [Core Concepts](#-core-concepts)
+- [Usage Examples](#-usage-examples)
+- [Advanced Features](#-advanced-features)
+- [Architecture](#-architecture)
+- [CLI Tools](#-cli-tools)
+- [Best Practices](#-best-practices)
+- [Troubleshooting](#-troubleshooting)
+- [Contributing](#-contributing)
 
-**👉 [Complete Documentation](DOCUMENTATION.md)** - Comprehensive guide covering:
-- Quick start and setup
-- Testing with RabbitMQ
-- PaymentsService API reference
-- Observability with Jaeger, Seq, Prometheus, and Grafana
-- Production deployment
-- Troubleshooting
+---
 
-## Project Structure
+## ✨ Features
 
-```
-OmniFlow.sln
-├── src/
-│   ├── OmniFlow.Core              # Core primitives (correlation, envelope, context)
-│   ├── OmniFlow.Messaging         # Message bus abstraction + middleware pipeline
-│   ├── OmniFlow.Sagas             # Saga orchestration engine
-│   ├── OmniFlow.Idempotency       # Idempotency store abstractions
-│   ├── OmniFlow.Observability     # OpenTelemetry & Serilog integration
-│   ├── OmniFlow.Adapters.RabbitMQ # RabbitMQ message bus implementation
-│   ├── OmniFlow.Adapters.Sql      # SQL-based persistence adapters
-│   └── OmniFlow.Tools.Cli         # CLI for saga inspection
-├── samples/
-│   ├── OrdersService              # Example: Order processing with saga
-│   └── PaymentsService            # Example: Payment processing service
-└── tests/
-    └── OmniFlow.Tests             # Unit tests for all components
-```
+### Core Features
 
-## Quick Start
+- 🎯 **Saga Orchestration** - Distributed transaction management with automatic compensation
+- 📨 **Message-Driven Architecture** - Pluggable message bus (InMemory, RabbitMQ, Kafka, Azure Service Bus)
+- 🔄 **Outbox Pattern** - Transactional messaging with guaranteed at-least-once delivery
+- 🛡️ **Idempotency** - Built-in duplicate message detection and handling
+- 🔌 **Circuit Breaker** - Polly-based resilience with configurable failure thresholds
+- ⚰️ **Dead Letter Queue (DLQ)** - Automatic handling of poison messages
+- 📊 **Distributed Tracing** - OpenTelemetry integration with Jaeger support
+- 📝 **Structured Logging** - Serilog integration with automatic correlation
+- 📈 **Metrics** - Prometheus exporter for monitoring
+- ⏱️ **Saga Timeouts** - Timer-based saga timeout mechanism
+- 🔐 **Message Signing** - HMAC-based message authentication
 
-### 1. Install NuGet Packages
+### Enterprise Features
+
+- ✅ **Production-Ready** - Optimistic concurrency, retry policies, error handling
+- 🚀 **Horizontal Scaling** - Stateless services with persistent saga storage
+- 🔧 **Extensible** - Adapter pattern for custom implementations
+- 🎨 **Developer-Friendly** - Unified configuration with IntelliSense support
+- 📦 **Modular Design** - Use only what you need
+- 🧪 **Testable** - In-memory implementations for unit testing
+
+---
+
+## 📦 Installation
+
+### NuGet Packages
 
 ```bash
+# Core packages
 dotnet add package OmniFlow.Core
 dotnet add package OmniFlow.Messaging
 dotnet add package OmniFlow.Sagas
+dotnet add package OmniFlow.Idempotency
 dotnet add package OmniFlow.Observability
+
+# Adapters (choose based on your needs)
+dotnet add package OmniFlow.Adapters.RabbitMQ
+dotnet add package OmniFlow.Adapters.Sql
+dotnet add package OmniFlow.Adapters.MongoDb
+
+# CLI Tools (optional)
+dotnet tool install --global OmniFlow.Tools.Cli
 ```
 
-### 2. Configure Services
+### Supported Versions
 
-```csharp
-var builder = WebApplication.CreateBuilder(args);
+- **.NET:** 8.0 or later
+- **C#:** 12.0 or later
 
-// Add OmniFlow services
-builder.Services.AddOmniFlowCore();
-builder.Services.AddOmniFlowMessaging();
-builder.Services.AddOmniFlowSagas();
-builder.Services.AddOmniFlowIdempotency();
-builder.Services.AddOmniFlowObservability("MyService");
+---
 
-// Register your sagas
-builder.Services.AddSaga<OrderSaga, OrderSagaState>();
-```
+## 🚀 Quick Start
 
-### 3. Define Messages
+### 1. Define Your Messages
 
 ```csharp
 using OmniFlow.Core;
 
-public record OrderCreated(string OrderId, decimal Amount) : IEvent;
-public record PaymentRequested(string OrderId, decimal Amount) : ICommand;
+// Commands (imperative)
+public record CreateOrder(string OrderId, decimal Amount, string CustomerId) : ICommand;
+public record RequestPayment(string OrderId, decimal Amount) : ICommand;
+
+// Events (past tense)
+public record OrderCreated(string OrderId, decimal Amount, string CustomerId) : IEvent;
+public record PaymentSucceeded(string OrderId, string PaymentId) : IEvent;
+public record PaymentFailed(string OrderId, string Reason) : IEvent;
 ```
 
-### 4. Create a Saga
+### 2. Create Your Saga
 
 ```csharp
 using OmniFlow.Sagas;
@@ -91,227 +107,521 @@ public class OrderSagaState : SagaState
 {
     public string OrderId { get; set; } = string.Empty;
     public decimal Amount { get; set; }
+    public bool PaymentCompleted { get; set; }
 }
 
 public class OrderSaga : Saga<OrderSagaState>
 {
-    protected override async Task OnStartAsync(CancellationToken cancellationToken)
+    protected override async Task OnStartAsync(CancellationToken ct)
     {
-        // Publish command to request payment
-        await PublishAsync(
-            new PaymentRequested(State.OrderId, State.Amount),
-            cancellationToken);
+        await PublishAsync(new RequestPayment(State.OrderId, State.Amount), ct);
     }
 
-    protected override async Task OnCompensateAsync(CancellationToken cancellationToken)
+    public async Task HandlePaymentSucceeded(PaymentSucceeded evt, CancellationToken ct)
     {
-        // Compensation logic (rollback)
-        await PublishAsync(new CancelOrder(State.OrderId), cancellationToken);
+        State.PaymentCompleted = true;
+        await CompleteAsync(ct);
+    }
+
+    public async Task HandlePaymentFailed(PaymentFailed evt, CancellationToken ct)
+    {
+        await CompensateAsync($"Payment failed: {evt.Reason}", ct);
+    }
+
+    protected override async Task OnCompensateAsync(CancellationToken ct)
+    {
+        await PublishAsync(new CancelOrder(State.OrderId), ct);
     }
 }
 ```
 
-### 5. Publish and Subscribe
+### 3. Configure OmniFlow
 
 ```csharp
-var messageBus = app.Services.GetRequiredService<IMessageBus>();
+using OmniFlow.Core;
 
-// Subscribe to events
-await messageBus.SubscribeAsync<OrderCreated>(async (envelope, context) =>
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddOmniFlow(options =>
 {
-    var saga = new OrderSaga();
-    saga.Initialize(repository, messageBus);
-    await saga.StartAsync(envelope.CorrelationId);
+    options.ServiceName = "OrdersService";
+
+    // Message Bus
+    options.MessageBus.Provider = MessageBusProvider.RabbitMQ;
+    options.MessageBus.RabbitMQ = new RabbitMQConfig
+    {
+        HostName = "localhost",
+        DeadLetterQueue = new DeadLetterQueueConfig
+        {
+            Enabled = true,
+            MaxRetries = 3
+        }
+    };
+
+    // Features
+    options.EnableSagas = true;
+    options.EnableOutbox = true;
+    options.EnableIdempotency = true;
+    options.EnableObservability = true;
+
+    // Register sagas
+    options.RegisterSaga<OrderSaga, OrderSagaState>();
 });
 
-// Publish messages
-await messageBus.PublishAsync(new OrderCreated("order-123", 99.99m));
+var app = builder.Build();
+app.Run();
 ```
 
-## Key Concepts
+---
+
+## ⚙️ Configuration
+
+### Unified Configuration
+
+```csharp
+builder.Services.AddOmniFlow(options =>
+{
+    options.ServiceName = "MyService";
+    options.EnableSagas = true;
+    options.EnableOutbox = true;
+    options.EnableIdempotency = true;
+    options.EnableObservability = true;
+});
+```
+
+### Message Bus Providers
+
+#### InMemory (Development)
+
+```csharp
+options.MessageBus.Provider = MessageBusProvider.InMemory;
+```
+
+#### RabbitMQ (Production)
+
+```csharp
+options.MessageBus.Provider = MessageBusProvider.RabbitMQ;
+options.MessageBus.RabbitMQ = new RabbitMQConfig
+{
+    HostName = "rabbitmq.example.com",
+    Port = 5672,
+    UserName = "user",
+    Password = "password",
+    DeadLetterQueue = new DeadLetterQueueConfig
+    {
+        Enabled = true,
+        MaxRetries = 3,
+        MessageTtl = TimeSpan.FromDays(7)
+    }
+};
+```
+
+#### Kafka (Coming Soon)
+
+```csharp
+options.MessageBus.Provider = MessageBusProvider.Kafka;
+options.MessageBus.Kafka = new KafkaConfig
+{
+    BootstrapServers = "kafka1:9092,kafka2:9092",
+    GroupId = "my-group",
+    SecurityProtocol = "SASL_SSL",
+    SaslMechanism = "SCRAM-SHA-256"
+};
+```
+
+### Circuit Breaker
+
+```csharp
+options.MessageBus.EnableCircuitBreaker = true;
+options.MessageBus.CircuitBreakerFailureRatio = 0.5;
+options.MessageBus.CircuitBreakerMinimumThroughput = 10;
+options.MessageBus.CircuitBreakerSamplingDurationSeconds = 30;
+options.MessageBus.CircuitBreakerBreakDurationSeconds = 60;
+```
+
+### Persistence
+
+#### SQL Server
+
+```csharp
+builder.Services.AddOmniFlowSqlAdapters(
+    builder.Configuration.GetConnectionString("OmniFlow")
+);
+```
+
+#### MongoDB
+
+```csharp
+builder.Services.AddOmniFlowMongoDbAdapters<OrderSagaState>(
+    connectionString: "mongodb://localhost:27017",
+    databaseName: "omniflow"
+);
+```
+
+---
+
+## 🎓 Core Concepts
 
 ### Message Envelope
 
-Every message is wrapped in a `MessageEnvelope<T>` containing:
-- `MessageId`: Unique message identifier
-- `CorrelationId`: For distributed tracing
-- `CausationId`: ID of the message that caused this one
-- `Timestamp`: Message creation time
-- `SchemaVersion`: For message evolution
-- `Signature`: Optional HMAC signature
+```csharp
+public sealed class MessageEnvelope<T>
+{
+    public string MessageId { get; }
+    public string CorrelationId { get; }
+    public string? CausationId { get; }
+    public DateTimeOffset Timestamp { get; }
+    public T Message { get; }
+    public int SchemaVersion { get; }
+}
+```
+
+### Saga Lifecycle
+
+```
+Start → Running → [Success] → Completed
+                ↓ [Failure]
+              Compensating → Compensated
+```
 
 ### Middleware Pipeline
 
-Messages flow through a configurable middleware pipeline:
-1. **CorrelationMiddleware**: Sets correlation context
-2. **LoggingMiddleware**: Logs message processing
-3. **RetryMiddleware**: Polly-based retry logic
+```
+Message → Correlation → Logging → Retry → Circuit Breaker → Handler
+```
 
-### Saga Patterns
+---
 
-**Orchestration**: Central saga coordinates all steps
+## 💡 Usage Examples
+
+### E-Commerce Order Processing
+
 ```csharp
 public class OrderSaga : Saga<OrderSagaState>
 {
-    // Saga controls the entire workflow
+    protected override async Task OnStartAsync(CancellationToken ct)
+    {
+        await PublishAsync(new RequestPayment(State.OrderId, State.Amount), ct);
+        await ScheduleTimerAsync(TimeSpan.FromMinutes(10), "PaymentTimeout", ct);
+    }
+
+    public async Task HandlePaymentSucceeded(PaymentSucceeded evt, CancellationToken ct)
+    {
+        await PublishAsync(new ReserveInventory(State.OrderId, State.ProductIds), ct);
+    }
+
+    public async Task HandleInventoryReserved(InventoryReserved evt, CancellationToken ct)
+    {
+        await PublishAsync(new CreateShipment(State.OrderId, State.Address), ct);
+    }
+
+    protected override async Task OnCompensateAsync(CancellationToken ct)
+    {
+        if (State.InventoryReserved)
+            await PublishAsync(new ReleaseInventory(State.OrderId), ct);
+
+        if (State.PaymentId != null)
+            await PublishAsync(new RefundPayment(State.PaymentId), ct);
+    }
 }
 ```
 
-**Choreography**: Services react to events independently (use message bus subscriptions)
+### Idempotent Message Handler
 
-### Idempotency
-
-Ensure messages are processed exactly once:
 ```csharp
-var idempotencyStore = services.GetRequiredService<IIdempotencyStore>();
-
-if (await idempotencyStore.TryRecordAsync(messageId, "MyConsumer"))
+await messageBus.SubscribeAsync<OrderCreated>(async (envelope, context) =>
 {
-    // Process message (first time)
-}
-// Else: already processed
-```
+    if (!await idempotencyStore.TryRecordAsync(envelope.MessageId, "OrdersService"))
+    {
+        logger.LogInformation("Duplicate message, skipping");
+        return;
+    }
 
-## Observability
-
-### Distributed Tracing
-
-All operations create OpenTelemetry spans:
-```csharp
-using var activity = OmniFlowTelemetry.StartMessageActivity(envelope);
-// Process message
-```
-
-### Metrics
-
-Built-in metrics for monitoring:
-- `omniflow.messages.published`
-- `omniflow.messages.processed`
-- `omniflow.sagas.started`
-- `omniflow.sagas.completed`
-
-### Structured Logging
-
-Correlation IDs automatically added to logs:
-```
-[10:23:45 INF] [correlation-123] Processing OrderCreated for order-456
-```
-
-## Adapters
-
-### RabbitMQ
-
-```csharp
-services.AddRabbitMQMessageBus(options =>
-{
-    options.HostName = "localhost";
-    options.ExchangeName = "omniflow";
+    await ProcessOrderAsync(envelope.Message);
 });
 ```
 
-### SQL Persistence
+---
+
+## 🔥 Advanced Features
+
+### Saga Timeouts
 
 ```csharp
-services.AddOmniFlowSqlAdapters(connectionString);
-```
-
-## Testing
-
-Run tests:
-```bash
-dotnet test
-```
-
-Example test:
-```csharp
-[Fact]
-public async Task Should_Complete_Saga_Successfully()
+protected override async Task OnStartAsync(CancellationToken ct)
 {
-    var repository = new InMemorySagaRepository<OrderSagaState>();
-    var saga = new OrderSaga();
-    saga.Initialize(repository, messageBus);
-    
-    await saga.StartAsync("correlation-123");
-    
-    var state = await repository.GetAsync(saga.State.SagaId);
-    state.Should().NotBeNull();
+    var timerId = await ScheduleTimerAsync(TimeSpan.FromMinutes(30), "OrderTimeout", ct);
+}
+
+public async Task HandleTimeout(string timerName, CancellationToken ct)
+{
+    await CompensateAsync("Order processing timed out", ct);
 }
 ```
 
-## CLI Tool
+### Custom Saga Repository
 
-Inspect and manage sagas:
-```bash
-omniflow-cli list --connection "Server=..."
-omniflow-cli inspect --saga-id abc123 --connection "Server=..."
-omniflow-cli replay --saga-id abc123 --connection "Server=..."
+```csharp
+public class RedisSagaRepository<TState> : ISagaRepository<TState>
+    where TState : SagaState
+{
+    public async Task SaveAsync(string sagaId, TState state, int version, CancellationToken ct)
+    {
+        var json = JsonSerializer.Serialize(state);
+        await _redis.GetDatabase().StringSetAsync($"saga:{sagaId}", json);
+    }
+}
 ```
 
-## 🎯 Quick Links
-
-- **[Complete Documentation](DOCUMENTATION.md)** - Full guide with examples
-- **[Sample Services](samples/)** - OrdersService and PaymentsService examples
-- **[Tests](tests/OmniFlow.Tests/)** - Unit and integration tests
-
-## 🏃 Quick Start
-
-```bash
-# 1. Start observability stack
-docker-compose -f docker-compose-observability.yml up -d
-
-# 2. Run sample services
-cd samples/OrdersService && dotnet run
-cd samples/PaymentsService && dotnet run  # In separate terminal
-
-# 3. Create an order
-curl -X POST http://localhost:5000/api/orders \
-  -H "Content-Type: application/json" \
-  -d '{"amount": 99.99, "customerId": "cust-123"}'
-
-# 4. Monitor the system
-# Logs: http://localhost:5341 (Seq)
-# Traces: http://localhost:16686 (Jaeger)
-# Metrics: http://localhost:9090 (Prometheus)
-# Messages: http://localhost:15672 (RabbitMQ)
-```
-
-## 🔧 Sample Services
-
-- **OrdersService** (Port 5000): Saga orchestrator for order processing
-- **PaymentsService** (Port 5001): Payment processing with REST API
-
-See [DOCUMENTATION.md](DOCUMENTATION.md#testing-with-rabbitmq) for detailed testing scenarios.
+---
 
 ## 🏗️ Architecture
 
+### Project Structure
+
 ```
-┌─────────────────┐    RabbitMQ     ┌──────────────────┐
-│ OrdersService   │ ──────────────> │ PaymentsService  │
-│ (Orchestrator)  │ <────────────── │ (Participant)    │
-└─────────────────┘                 └──────────────────┘
-        ↓                                    ↓
-    OrderSaga                          Processes
-    Coordinates                        Payments
-        ↓                                    ↓
-┌────────────────────────────────────────────────────┐
-│           Observability Stack                      │
-│  Jaeger (Traces) | Seq (Logs) | Prometheus (Metrics) │
-└────────────────────────────────────────────────────┘
+OmniFlow/
+├── src/
+│   ├── OmniFlow.Core                 # Core primitives
+│   ├── OmniFlow.Messaging            # Message bus + middleware
+│   ├── OmniFlow.Sagas                # Saga engine
+│   ├── OmniFlow.Idempotency          # Idempotency store
+│   ├── OmniFlow.Observability        # OpenTelemetry
+│   ├── OmniFlow.Adapters.RabbitMQ    # RabbitMQ adapter
+│   ├── OmniFlow.Adapters.Sql         # SQL persistence
+│   ├── OmniFlow.Adapters.MongoDb     # MongoDB persistence
+│   └── OmniFlow.Tools.Cli            # CLI tools
+├── samples/
+│   ├── OrdersService
+│   └── PaymentsService
+└── tests/
+    └── OmniFlow.Tests
 ```
+
+### Dependency Graph
+
+```
+OmniFlow.Core
+  ↓
+OmniFlow.Messaging → OmniFlow.Idempotency
+  ↓
+OmniFlow.Sagas ← OmniFlow.Observability
+  ↓
+OmniFlow.Adapters.*
+```
+
+---
+
+## 🛠️ CLI Tools
+
+### Installation
+
+```bash
+dotnet tool install --global OmniFlow.Tools.Cli
+```
+
+### Commands
+
+```bash
+# List all sagas
+omniflow list --connection "Server=localhost;Database=OmniFlow;..."
+
+# Inspect saga details
+omniflow inspect --saga-id saga-123 --connection "..."
+
+# Replay failed saga
+omniflow replay --saga-id saga-123 --connection "..."
+```
+
+**Output Example:**
+
+```
+┌──────────────┬───────────┬───────────┬─────────────────────┐
+│ Saga ID      │ Type      │ Status    │ Created             │
+├──────────────┼───────────┼───────────┼─────────────────────┤
+│ saga-123     │ OrderSaga │ Running   │ 2024-01-15 10:30:00 │
+│ saga-456     │ OrderSaga │ Completed │ 2024-01-15 10:25:00 │
+└──────────────┴───────────┴───────────┴─────────────────────┘
+```
+
+---
+
+## 📚 Best Practices
+
+### Message Design
+
+✅ **DO:**
+- Use records: `public record OrderCreated(...) : IEvent;`
+- Past tense for events: `OrderCreated`, `PaymentSucceeded`
+- Imperative for commands: `CreateOrder`, `RequestPayment`
+- Include all necessary data
+
+❌ **DON'T:**
+- Don't include behavior in messages
+- Don't use mutable classes
+- Don't create circular dependencies
+
+### Saga Design
+
+✅ **DO:**
+- Use `PublishAsync()` to publish messages
+- Check `State.Status` before processing
+- Register sagas as transient
+- Use timeouts for long-running sagas
+
+❌ **DON'T:**
+- Don't mutate state without save methods
+- Don't share saga instances
+- Don't call `MessageBus.PublishAsync()` directly
+- Don't swallow exceptions
+
+### Error Handling
+
+✅ **DO:**
+- Let exceptions bubble up
+- Use compensation for business failures
+- Log with correlation IDs
+- Set up DLQ for poison messages
+
+❌ **DON'T:**
+- Don't swallow exceptions
+- Don't retry indefinitely
+- Don't ignore idempotency
+
+---
+
+## 🐛 Troubleshooting
+
+### Saga not persisting state
+
+**Cause:** Forgot to call save methods
+
+**Solution:**
+```csharp
+// ❌ Wrong
+await MessageBus.PublishAsync(message);
+
+// ✅ Correct
+await PublishAsync(message, ct);
+```
+
+### Duplicate messages processed
+
+**Cause:** Missing idempotency check
+
+**Solution:**
+```csharp
+if (!await idempotencyStore.TryRecordAsync(envelope.MessageId, "MyService"))
+    return;
+```
+
+### Circuit breaker not opening
+
+**Cause:** Throughput below minimum
+
+**Solution:**
+```csharp
+options.MessageBus.CircuitBreakerMinimumThroughput = 5;
+```
+
+### Enable Debug Logging
+
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "OmniFlow": "Debug"
+    }
+  }
+}
+```
+
+---
+
+## 🌍 Environment Configuration
+
+### Development
+
+```csharp
+if (builder.Environment.IsDevelopment())
+{
+    options.MessageBus.Provider = MessageBusProvider.InMemory;
+    options.EnableOutbox = false;
+}
+```
+
+### Production
+
+```csharp
+else
+{
+    options.MessageBus.Provider = MessageBusProvider.RabbitMQ;
+    builder.Services.AddOmniFlowSqlAdapters(connectionString);
+    options.EnableOutbox = true;
+}
+```
+
+---
 
 ## 🤝 Contributing
 
-Contributions welcome! This framework follows:
-- Clean code principles & SOLID design patterns
-- Comprehensive XML documentation
-- Test-driven development
+We welcome contributions!
+
+### Development Setup
+
+```bash
+git clone https://github.com/Seshathri77/Omni.git
+cd Omni
+dotnet restore
+dotnet build
+dotnet test
+```
+
+### Docker Compose
+
+```bash
+docker-compose up -d
+
+# Services:
+# - RabbitMQ: http://localhost:15672
+# - Jaeger: http://localhost:16686
+# - Seq: http://localhost:5341
+# - Prometheus: http://localhost:9090
+```
+
+---
 
 ## 📄 License
 
-MIT
+MIT License - see [LICENSE](LICENSE) file.
 
-## 🔗 Resources
+---
 
-- [Complete Documentation](DOCUMENTATION.md)
-- [Saga Pattern](https://microservices.io/patterns/data/saga.html)
-- [OpenTelemetry .NET](https://opentelemetry.io/docs/instrumentation/net/)
+## 🙏 Acknowledgments
+
+- **Polly** - Resilience patterns
+- **OpenTelemetry** - Distributed tracing
+- **Serilog** - Structured logging
+- **RabbitMQ** - Message broker
+- **Entity Framework Core** - Data access
+
+---
+
+## 📞 Support
+
+- **Issues:** [GitHub Issues](https://github.com/Seshathri77/Omni/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/Seshathri77/Omni/discussions)
+
+---
+
+## 🗺️ Roadmap
+
+- [ ] Kafka adapter
+- [ ] Azure Service Bus adapter
+- [ ] Saga visualization UI
+- [ ] Schema evolution
+- [ ] Helm charts for Kubernetes
+
+---
+
+**Made with ❤️ by the OmniFlow Team**

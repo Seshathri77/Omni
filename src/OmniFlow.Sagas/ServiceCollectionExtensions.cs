@@ -14,7 +14,18 @@ public static class ServiceCollectionExtensions
     {
         services.AddSingleton(typeof(ISagaRepository<>), typeof(InMemorySagaRepository<>));
         services.AddSingleton<ITimerService, InMemoryTimerService>();
-        
+
+        return services;
+    }
+
+    /// <summary>
+    /// Adds outbox pattern support for transactional messaging.
+    /// </summary>
+    public static IServiceCollection AddOmniFlowOutbox(this IServiceCollection services)
+    {
+        services.AddSingleton<Outbox.IOutboxStore, Outbox.InMemoryOutboxStore>();
+        services.AddHostedService<Outbox.OutboxPublisher>();
+
         return services;
     }
 

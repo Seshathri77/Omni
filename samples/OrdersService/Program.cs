@@ -24,31 +24,35 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 builder.Host.UseSerilog();
 
-// Add OmniFlow services
-builder.Services.AddOmniFlowCore();
-builder.Services.AddRabbitMQMessageBus(options =>
+// Add OmniFlow services - Unified configuration
+builder.Services.AddOmniFlow(options =>
 {
-    options.HostName = builder.Configuration["RabbitMQ:HostName"] ?? "localhost";
-    options.Port = int.Parse(builder.Configuration["RabbitMQ:Port"] ?? "5672");
-    options.UserName = builder.Configuration["RabbitMQ:UserName"] ?? "guest";
-    options.Password = builder.Configuration["RabbitMQ:Password"] ?? "guest";
-    options.VirtualHost = builder.Configuration["RabbitMQ:VirtualHost"] ?? "/";
-});
-builder.Services.AddOmniFlowSagas().AddSaga<OrderSaga, OrderSagaState>();
-builder.Services.AddOmniFlowIdempotency();
-// Add observability with Jaeger exporter and Prometheus metrics
-builder.Services.AddOmniFlowObservability("OrdersService", 
-    tracing =>
-    {
-        tracing.AddOtlpExporter(options =>
-        {
-            options.Endpoint = new Uri("http://localhost:4317"); // Jaeger OTLP endpoint
-        });
-    },
-    enablePrometheusExporter: true); // Exposes /metrics endpoint
+    options.ServiceName = "OrdersService";
 
-// Register saga
-//builder.Services.AddSaga<OrderSaga, OrderSagaState>();
+    // Message Bus configuration
+    options.MessageBus.Provider = MessageBusProvider.RabbitMQ;
+    options.MessageBus.RabbitMQ = new RabbitMQConfig
+    {
+        HostName = builder.Configuration["RabbitMQ:HostName"] ?? "localhost",
+        Port = int.Parse(builder.Configuration["RabbitMQ:Port"] ?? "5672"),
+        UserName = builder.Configuration["RabbitMQ:UserName"] ?? "guest",
+        Password = builder.Configuration["RabbitMQ:Password"] ?? "guest",
+        VirtualHost = builder.Configuration["RabbitMQ:VirtualHost"] ?? "/",
+        ExchangeName = "omniflow"
+    };
+
+    // Enable features
+    options.EnableSagas = true;
+    options.EnableIdempotency = true;
+    options.EnableObservability = true;
+
+    // Register sagas
+    options.RegisterSaga<OrderSaga, OrderSagaState>();
+
+    // Observability configuration
+    options.Observability.EnablePrometheusExporter = true;
+    options.Observability.OtlpEndpoint = "http://localhost:4317"; 
+});
 
 // Add controllers
 builder.Services.AddControllers();

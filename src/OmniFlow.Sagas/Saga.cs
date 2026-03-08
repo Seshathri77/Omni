@@ -1,5 +1,6 @@
 using OmniFlow.Core;
 using OmniFlow.Messaging;
+using System.Text.Json;
 
 namespace OmniFlow.Sagas;
 
@@ -12,6 +13,7 @@ public abstract class Saga<TState> where TState : SagaState, new()
     protected ISagaRepository<TState> Repository { get; private set; } = null!;
     protected IMessageBus MessageBus { get; private set; } = null!;
     protected ITimerService? TimerService { get; private set; }
+    protected Outbox.IOutboxStore? OutboxStore { get; private set; }
 
     /// <summary>
     /// Current saga state.
@@ -24,11 +26,13 @@ public abstract class Saga<TState> where TState : SagaState, new()
     public void Initialize(
         ISagaRepository<TState> repository,
         IMessageBus messageBus,
-        ITimerService? timerService = null)
+        ITimerService? timerService = null,
+        Outbox.IOutboxStore? outboxStore = null)
     {
         Repository = repository;
         MessageBus = messageBus;
         TimerService = timerService;
+        OutboxStore = outboxStore;
     }
 
     /// <summary>
@@ -80,12 +84,39 @@ public abstract class Saga<TState> where TState : SagaState, new()
 
     /// <summary>
     /// Publishes a message (command or event) and saves state.
+    /// Uses outbox pattern if configured for transactional consistency.
     /// </summary>
     protected async Task PublishAsync<T>(T message, CancellationToken cancellationToken = default) 
         where T : class, IMessage
     {
-        await MessageBus.PublishAsync(message, cancellationToken);
-        AddHistory($"Published {typeof(T).Name}");
+        if (OutboxStore != null)
+        {
+            // Use outbox pattern - save message to outbox in same transaction as state
+            var correlationAccessor = new CorrelationAccessor();
+            correlationAccessor.SetContext(State.CorrelationId, State.SagaId);
+
+            var envelope = MessageEnvelope<T>.Create(message, correlationAccessor);
+
+            var outboxMessage = new Outbox.OutboxMessage
+            {
+                MessageId = envelope.MessageId,
+                SagaId = State.SagaId,
+                MessageType = typeof(T).Name,
+                MessageTypeName = $"OmniFlow.Core.MessageEnvelope`1[[{typeof(T).AssemblyQualifiedName}]], OmniFlow.Core",
+                MessageJson = JsonSerializer.Serialize(envelope),
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+
+            await OutboxStore.SaveAsync(outboxMessage, cancellationToken);
+            AddHistory($"Saved {typeof(T).Name} to outbox");
+        }
+        else
+        {
+            // Direct publishing (original behavior)
+            await MessageBus.PublishAsync(message, cancellationToken);
+            AddHistory($"Published {typeof(T).Name}");
+        }
+
         State.UpdatedAt = DateTimeOffset.UtcNow;
         await SaveStateAsync(cancellationToken);
     }

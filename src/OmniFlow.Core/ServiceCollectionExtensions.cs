@@ -9,6 +9,7 @@ public static class ServiceCollectionExtensions
 {
     /// <summary>
     /// Adds OmniFlow core services to the dependency injection container.
+    /// For backward compatibility. Consider using AddOmniFlow() instead.
     /// </summary>
     public static IServiceCollection AddOmniFlowCore(
         this IServiceCollection services,

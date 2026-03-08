@@ -22,27 +22,32 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 builder.Host.UseSerilog();
 
-// Add OmniFlow services
-builder.Services.AddOmniFlowCore();
-builder.Services.AddRabbitMQMessageBus(options =>
+// Add OmniFlow services - Unified configuration
+builder.Services.AddOmniFlow(options =>
 {
-    options.HostName = builder.Configuration["RabbitMQ:HostName"] ?? "localhost";
-    options.Port = int.Parse(builder.Configuration["RabbitMQ:Port"] ?? "5672");
-    options.UserName = builder.Configuration["RabbitMQ:UserName"] ?? "guest";
-    options.Password = builder.Configuration["RabbitMQ:Password"] ?? "guest";
-    options.VirtualHost = builder.Configuration["RabbitMQ:VirtualHost"] ?? "/";
-});
+    options.ServiceName = "PaymentsService";
 
-// Add observability with Jaeger exporter and Prometheus metrics
-builder.Services.AddOmniFlowObservability("PaymentsService", 
-    tracing =>
+    // Message Bus configuration
+    options.MessageBus.Provider = MessageBusProvider.RabbitMQ;
+    options.MessageBus.RabbitMQ = new RabbitMQConfig
     {
-        tracing.AddOtlpExporter(options =>
-        {
-            options.Endpoint = new Uri("http://localhost:4317"); // Jaeger OTLP endpoint
-        });
-    },
-    enablePrometheusExporter: true); // Exposes /metrics endpoint
+        HostName = builder.Configuration["RabbitMQ:HostName"] ?? "localhost",
+        Port = int.Parse(builder.Configuration["RabbitMQ:Port"] ?? "5672"),
+        UserName = builder.Configuration["RabbitMQ:UserName"] ?? "guest",
+        Password = builder.Configuration["RabbitMQ:Password"] ?? "guest",
+        VirtualHost = builder.Configuration["RabbitMQ:VirtualHost"] ?? "/",
+        ExchangeName = "omniflow"
+    };
+
+    // Enable features (PaymentsService doesn't use sagas in this example)
+    options.EnableSagas = false;
+    options.EnableIdempotency = false;
+    options.EnableObservability = true;
+
+    // Observability configuration
+    options.Observability.EnablePrometheusExporter = true;
+    options.Observability.OtlpEndpoint = "http://localhost:4317"; // Jaeger OTLP endpoint
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
