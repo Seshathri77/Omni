@@ -154,6 +154,9 @@ public class ServiceBusConfig
 {
     public string ConnectionString { get; set; } = string.Empty;
     public string TopicName { get; set; } = "omniflow";
+    public string SubscriptionName { get; set; } = "default-subscription";
+    public int MaxDeliveryCount { get; set; } = 10;
+    public TimeSpan? MessageTimeToLive { get; set; } = TimeSpan.FromDays(14);
 }
 
 /// <summary>
@@ -164,6 +167,13 @@ public class KafkaConfig
     public string BootstrapServers { get; set; } = "localhost:9092";
     public string GroupId { get; set; } = "omniflow";
     public string TopicPrefix { get; set; } = "omniflow";
+    public bool EnableAutoCommit { get; set; } = false;
+    public string AutoOffsetReset { get; set; } = "earliest";
+    public int MaxPollRecords { get; set; } = 500;
+    public string? SaslMechanism { get; set; }
+    public string? SaslUsername { get; set; }
+    public string? SaslPassword { get; set; }
+    public string SecurityProtocol { get; set; } = "PLAINTEXT";
 }
 
 /// <summary>

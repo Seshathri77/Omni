@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31903.59
+# Visual Studio Version 18
+VisualStudioVersion = 18.3.11520.95 d18.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}"
 EndProject
@@ -32,6 +32,15 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OmniFlow.Tests", "tests\OmniFlow.Tests\OmniFlow.Tests.csproj", "{A1234567-1234-1234-1234-123456789011}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OmniFlow.Adapters.MongoDb", "src\OmniFlow.Adapters.MongoDb\OmniFlow.Adapters.MongoDb.csproj", "{406EDAEF-822A-4B25-9E03-79A097BD1A24}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OmniFlow.Adapters.Kafka", "src\OmniFlow.Adapters.Kafka\OmniFlow.Adapters.Kafka.csproj", "{9909D537-A8E0-473D-A856-D5BDB7E6C6C5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OmniFlow.Adapters.ServiceBus", "src\OmniFlow.Adapters.ServiceBus\OmniFlow.Adapters.ServiceBus.csproj", "{94CB1213-CB29-3A86-1571-511A6D115058}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{CE453D38-B378-4862-865E-550A939C66BC}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -187,6 +196,30 @@ Global
 		{406EDAEF-822A-4B25-9E03-79A097BD1A24}.Release|x64.Build.0 = Release|Any CPU
 		{406EDAEF-822A-4B25-9E03-79A097BD1A24}.Release|x86.ActiveCfg = Release|Any CPU
 		{406EDAEF-822A-4B25-9E03-79A097BD1A24}.Release|x86.Build.0 = Release|Any CPU
+		{9909D537-A8E0-473D-A856-D5BDB7E6C6C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9909D537-A8E0-473D-A856-D5BDB7E6C6C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9909D537-A8E0-473D-A856-D5BDB7E6C6C5}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{9909D537-A8E0-473D-A856-D5BDB7E6C6C5}.Debug|x64.Build.0 = Debug|Any CPU
+		{9909D537-A8E0-473D-A856-D5BDB7E6C6C5}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{9909D537-A8E0-473D-A856-D5BDB7E6C6C5}.Debug|x86.Build.0 = Debug|Any CPU
+		{9909D537-A8E0-473D-A856-D5BDB7E6C6C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9909D537-A8E0-473D-A856-D5BDB7E6C6C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9909D537-A8E0-473D-A856-D5BDB7E6C6C5}.Release|x64.ActiveCfg = Release|Any CPU
+		{9909D537-A8E0-473D-A856-D5BDB7E6C6C5}.Release|x64.Build.0 = Release|Any CPU
+		{9909D537-A8E0-473D-A856-D5BDB7E6C6C5}.Release|x86.ActiveCfg = Release|Any CPU
+		{9909D537-A8E0-473D-A856-D5BDB7E6C6C5}.Release|x86.Build.0 = Release|Any CPU
+		{94CB1213-CB29-3A86-1571-511A6D115058}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{94CB1213-CB29-3A86-1571-511A6D115058}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{94CB1213-CB29-3A86-1571-511A6D115058}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{94CB1213-CB29-3A86-1571-511A6D115058}.Debug|x64.Build.0 = Debug|Any CPU
+		{94CB1213-CB29-3A86-1571-511A6D115058}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{94CB1213-CB29-3A86-1571-511A6D115058}.Debug|x86.Build.0 = Debug|Any CPU
+		{94CB1213-CB29-3A86-1571-511A6D115058}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{94CB1213-CB29-3A86-1571-511A6D115058}.Release|Any CPU.Build.0 = Release|Any CPU
+		{94CB1213-CB29-3A86-1571-511A6D115058}.Release|x64.ActiveCfg = Release|Any CPU
+		{94CB1213-CB29-3A86-1571-511A6D115058}.Release|x64.Build.0 = Release|Any CPU
+		{94CB1213-CB29-3A86-1571-511A6D115058}.Release|x86.ActiveCfg = Release|Any CPU
+		{94CB1213-CB29-3A86-1571-511A6D115058}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -204,5 +237,10 @@ Global
 		{A1234567-1234-1234-1234-123456789010} = {8BC9CEB8-8B4A-11D0-8D11-00A0C91BC943}
 		{A1234567-1234-1234-1234-123456789011} = {8BC9CEB8-8B4A-11D0-8D11-00A0C91BC944}
 		{406EDAEF-822A-4B25-9E03-79A097BD1A24} = {8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}
+		{9909D537-A8E0-473D-A856-D5BDB7E6C6C5} = {8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}
+		{94CB1213-CB29-3A86-1571-511A6D115058} = {8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {AD4F33C8-6C8B-4DD3-A360-15FE6F16A440}
 	EndGlobalSection
 EndGlobal

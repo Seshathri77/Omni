@@ -68,7 +68,26 @@ public static class ServiceCollectionExtensions
                     method?.Invoke(null, new object[] { services });
                 }
                 break;
-            // Future: ServiceBus, Kafka
+
+            case MessageBusProvider.Kafka:
+                // Use reflection to avoid hard dependency on Kafka adapter
+                var kafkaExtension = Type.GetType("OmniFlow.Adapters.Kafka.ServiceCollectionExtensions, OmniFlow.Adapters.Kafka");
+                if (kafkaExtension != null)
+                {
+                    var method = kafkaExtension.GetMethod("AddOmniFlowKafka");
+                    method?.Invoke(null, new object[] { services });
+                }
+                break;
+
+            case MessageBusProvider.ServiceBus:
+                // Use reflection to avoid hard dependency on Service Bus adapter
+                var serviceBusExtension = Type.GetType("OmniFlow.Adapters.ServiceBus.ServiceCollectionExtensions, OmniFlow.Adapters.ServiceBus");
+                if (serviceBusExtension != null)
+                {
+                    var method = serviceBusExtension.GetMethod("AddOmniFlowServiceBus");
+                    method?.Invoke(null, new object[] { services });
+                }
+                break;
         }
 
         // 3. Add Sagas (if enabled)
