@@ -201,8 +201,7 @@ public class ServiceBusMessageBus : IMessageBus, IAsyncDisposable
                 var subscriptionOptions = new CreateSubscriptionOptions(_options.TopicName, subscriptionName)
                 {
                     DefaultMessageTimeToLive = _options.MessageTimeToLive ?? TimeSpan.FromDays(14),
-                    MaxDeliveryCount = _options.MaxDeliveryCount,
-                    EnableDeadLetteringOnMessageExpiration = true
+                    MaxDeliveryCount = _options.MaxDeliveryCount
                 };
 
                 // Add filter for message type
