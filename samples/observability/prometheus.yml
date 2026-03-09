@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'ecommerce'
+    environment: 'development'
+
+scrape_configs:
+  # Order Service metrics
+  - job_name: 'order-service'
+    static_configs:
+      - targets: ['host.docker.internal:5001']
+        labels:
+          service: 'OrderService'
+          application: 'ecommerce'
+
+  # Payment Service metrics
+  - job_name: 'payment-service'
+    static_configs:
+      - targets: ['host.docker.internal:5002']
+        labels:
+          service: 'PaymentService'
+          application: 'ecommerce'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

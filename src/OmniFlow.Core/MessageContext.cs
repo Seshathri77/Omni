@@ -31,6 +31,11 @@ public sealed class MessageContext
     public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.UtcNow;
 
     /// <summary>
+    /// Cancellation token for the message processing operation.
+    /// </summary>
+    public CancellationToken CancellationToken { get; init; } = default;
+
+    /// <summary>
     /// Additional metadata.
     /// </summary>
     public IReadOnlyDictionary<string, string> Metadata { get; init; } = 
@@ -39,7 +44,7 @@ public sealed class MessageContext
     /// <summary>
     /// Creates a context from a message envelope.
     /// </summary>
-    public static MessageContext FromEnvelope<T>(MessageEnvelope<T> envelope) where T : class
+    public static MessageContext FromEnvelope<T>(MessageEnvelope<T> envelope, CancellationToken cancellationToken = default) where T : class
     {
         return new MessageContext
         {
@@ -48,7 +53,8 @@ public sealed class MessageContext
             MessageId = envelope.MessageId,
             MessageType = envelope.MessageType,
             Timestamp = envelope.Timestamp,
-            Metadata = envelope.Metadata
+            Metadata = envelope.Metadata,
+            CancellationToken = cancellationToken
         };
     }
 }

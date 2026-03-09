@@ -102,7 +102,10 @@ public static class ServiceCollectionExtensions
                 // Register individual sagas
                 foreach (var (sagaType, stateType) in options.SagaRegistrations)
                 {
-                    var addSagaMethod = sagasExtension.GetMethod("AddSaga");
+                    // Get the AddSaga method with just IServiceCollection parameter (not the one with Action<SagaOptions<TState>>)
+                    var addSagaMethod = sagasExtension.GetMethod(
+                        "AddSaga",
+                        new[] { typeof(IServiceCollection) });
                     var genericMethod = addSagaMethod?.MakeGenericMethod(sagaType, stateType);
                     genericMethod?.Invoke(null, new object[] { services });
                 }

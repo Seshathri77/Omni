@@ -37,18 +37,68 @@ public class RabbitMQMessageBus : IMessageBus, IDisposable
             Port = _options.Port,
             UserName = _options.UserName,
             Password = _options.Password,
-            VirtualHost = _options.VirtualHost
+            VirtualHost = _options.VirtualHost,
+            AutomaticRecoveryEnabled = true,
+            NetworkRecoveryInterval = TimeSpan.FromSeconds(10),
+            RequestedHeartbeat = TimeSpan.FromSeconds(60)
         };
 
-        _connection = factory.CreateConnection();
-        _channel = _connection.CreateModel();
+        // Retry connection with exponential backoff
+        const int maxRetries = 5;
+        var retryDelayMs = 1000;
+        Exception? lastException = null;
 
-        DeclareExchange();
-
-        if (_options.DeadLetterQueue.Enabled)
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
-            DeclareDeadLetterQueue();
+            try
+            {
+                _logger.LogInformation(
+                    "Attempting to connect to RabbitMQ at {Host}:{Port} (attempt {Attempt}/{MaxRetries})",
+                    _options.HostName, _options.Port, attempt, maxRetries);
+
+                _connection = factory.CreateConnection();
+                _channel = _connection.CreateModel();
+
+                _logger.LogInformation(
+                    "Successfully connected to RabbitMQ at {Host}:{Port} as {User}",
+                    _options.HostName, _options.Port, _options.UserName);
+
+                DeclareExchange();
+
+                if (_options.DeadLetterQueue.Enabled)
+                {
+                    DeclareDeadLetterQueue();
+                }
+
+                return; // Success - exit constructor
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+
+                if (attempt < maxRetries)
+                {
+                    _logger.LogWarning(ex,
+                        "Failed to connect to RabbitMQ at {Host}:{Port} (attempt {Attempt}/{MaxRetries}). Retrying in {Delay}ms...",
+                        _options.HostName, _options.Port, attempt, maxRetries, retryDelayMs);
+
+                    Thread.Sleep(retryDelayMs);
+                    retryDelayMs = Math.Min(retryDelayMs * 2, 30000); // Exponential backoff, max 30s
+                }
+                else
+                {
+                    _logger.LogError(ex,
+                        "Failed to connect to RabbitMQ at {Host}:{Port} after {MaxRetries} attempts",
+                        _options.HostName, _options.Port, maxRetries);
+                }
+            }
         }
+
+        // All retries failed
+        throw new InvalidOperationException(
+            $"Failed to connect to RabbitMQ at {_options.HostName}:{_options.Port} after {maxRetries} attempts. " +
+            $"Please ensure RabbitMQ is running and accessible.",
+            lastException);
     }
 
     public Task PublishAsync<T>(T message, CancellationToken cancellationToken = default) where T : class

@@ -258,6 +258,187 @@ builder.Services.AddOmniFlowMongoDbAdapters<OrderSagaState>(
 );
 ```
 
+### Logging with Serilog
+
+OmniFlow includes integrated Serilog support with automatic correlation ID enrichment.
+
+#### Basic Configuration (Automatic)
+
+```csharp
+builder.Services.AddOmniFlow(options =>
+{
+    options.ServiceName = "OrderService";
+    options.EnableObservability = true; // Includes Serilog
+
+    // Logging is automatically configured with correlation IDs
+});
+```
+
+#### Custom Serilog Configuration
+
+```csharp
+builder.Services.AddOmniFlow(options =>
+{
+    options.ServiceName = "OrderService";
+
+    // Logging configuration
+    options.Logging.EnableConsole = true;
+    options.Logging.EnableFile = true;
+    options.Logging.FilePath = "logs/order-service-.log";
+    options.Logging.UseJsonFormat = false;
+    options.Logging.MinimumLevel = "Information";
+    options.Logging.EnableCorrelationId = true;
+    options.Logging.LogLevelOverrides = new Dictionary<string, string>
+    {
+        ["Microsoft"] = "Warning",
+        ["System"] = "Warning",
+        ["OmniFlow"] = "Debug"
+    };
+});
+```
+
+#### Manual Serilog with OmniFlow Enrichers
+
+```csharp
+using OmniFlow.Observability;
+
+builder.Host.UseSerilog((context, services, configuration) =>
+{
+    var correlationAccessor = services.GetRequiredService<ICorrelationAccessor>();
+
+    configuration
+        .ConfigureOmniFlowSerilog(correlationAccessor, "OrderService")
+        .WriteTo.Seq("http://seq-server:5341")
+        .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri("http://elastic:9200")));
+});
+```
+
+#### Configuration via appsettings.json
+
+```json
+{
+  "OmniFlow": {
+    "ServiceName": "OrderService",
+    "Logging": {
+      "EnableConsole": true,
+      "EnableFile": true,
+      "FilePath": "logs/order-service-.log",
+      "UseJsonFormat": false,
+      "MinimumLevel": "Information",
+      "EnableCorrelationId": true,
+      "LogLevelOverrides": {
+        "Microsoft": "Warning",
+        "System": "Warning",
+        "OmniFlow": "Debug"
+      }
+    }
+  }
+}
+```
+
+#### Log Output with Automatic Correlation
+
+```
+[14:32:15 INF] [OrderService.Handlers.PaymentEventHandler] [abc123-def456] Payment succeeded PAY-789
+[14:32:16 WRN] [PaymentService] [abc123-def456] Payment failed: Insufficient funds
+[14:32:17 ERR] [OrderService.Sagas.OrderSaga] [abc123-def456] Compensating transaction started
+```
+
+Components:
+- `14:32:15` - Timestamp
+- `INF` - Log level
+- `OrderService.Handlers.PaymentEventHandler` - Source context
+- `abc123-def456` - **Correlation ID** (automatic!)
+- `Payment succeeded PAY-789` - Message
+
+#### Structured Logging
+
+```csharp
+// ✅ GOOD - Structured logging
+_logger.LogInformation("Order {OrderId} created for customer {CustomerId}", orderId, customerId);
+
+// ❌ BAD - String concatenation
+_logger.LogInformation($"Order {orderId} created for customer {customerId}");
+```
+
+#### File Logging with Rotation
+
+```csharp
+options.Logging.EnableFile = true;
+options.Logging.FilePath = "logs/order-service-.log";
+```
+
+Output files (automatically rotated daily):
+```
+logs/order-service-20240115.log
+logs/order-service-20240114.log
+logs/order-service-20240113.log
+```
+
+Set retention limit:
+```csharp
+// In OmniFlowLoggingOptions
+RetainedFileCountLimit = 7; // Keep 7 days
+```
+
+#### JSON Format for Log Aggregation
+
+Perfect for ELK, Splunk, or other log aggregation systems:
+
+```csharp
+options.Logging.UseJsonFormat = true;
+options.Logging.EnableFile = true;
+options.Logging.FilePath = "logs/order-service-.json";
+```
+
+JSON output:
+```json
+{
+  "Timestamp": "2024-01-15T14:32:15.123Z",
+  "Level": "Information",
+  "MessageTemplate": "Payment succeeded {PaymentId}",
+  "Properties": {
+    "PaymentId": "PAY-789",
+    "CorrelationId": "abc123-def456",
+    "ServiceName": "OrderService",
+    "SourceContext": "OrderService.Handlers.PaymentEventHandler"
+  }
+}
+```
+
+#### Logging Options
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `EnableSerilog` | `bool` | `true` | Enable Serilog configuration |
+| `EnableConsole` | `bool` | `true` | Enable console logging |
+| `EnableFile` | `bool` | `false` | Enable file logging |
+| `FilePath` | `string` | `null` | Log file path with rolling |
+| `UseJsonFormat` | `bool` | `false` | Use JSON format for logs |
+| `EnableCorrelationId` | `bool` | `true` | Include correlation ID in logs |
+| `MinimumLevel` | `string` | `"Information"` | Minimum log level |
+| `LogLevelOverrides` | `Dictionary<string, string>` | See above | Override levels by namespace |
+
+### Observability with OpenTelemetry
+
+OmniFlow integrates OpenTelemetry for distributed tracing and metrics.
+
+#### Basic Configuration
+
+```csharp
+builder.Services.AddOmniFlow(options =>
+{
+    options.ServiceName = "OrderService";
+    options.EnableObservability = true;
+
+    // Configure tracing
+    options.Observability.OtlpEndpoint = "http://jaeger:4317";
+    options.Observability.EnablePrometheusExporter = true;
+});
+```
+
+Logs automatically correlate with traces via correlation ID - view the complete request timeline in Jaeger!
+
 ---
 
 ## 🎓 Core Concepts

@@ -196,3 +196,53 @@ public class ObservabilityOptions
     /// </summary>
     public string? OtlpEndpoint { get; set; }
 }
+
+/// <summary>
+/// Logging configuration options (Serilog).
+/// </summary>
+public class LoggingOptions
+{
+    /// <summary>
+    /// Enable Serilog configuration. Default is true.
+    /// </summary>
+    public bool EnableSerilog { get; set; } = true;
+
+    /// <summary>
+    /// Enable console logging. Default is true.
+    /// </summary>
+    public bool EnableConsole { get; set; } = true;
+
+    /// <summary>
+    /// Enable file logging. Default is false.
+    /// </summary>
+    public bool EnableFile { get; set; } = false;
+
+    /// <summary>
+    /// File log path. Default is "logs/{ServiceName}-.log".
+    /// </summary>
+    public string? FilePath { get; set; }
+
+    /// <summary>
+    /// Use JSON format for logs. Default is false.
+    /// </summary>
+    public bool UseJsonFormat { get; set; } = false;
+
+    /// <summary>
+    /// Enable correlation ID in logs. Default is true.
+    /// </summary>
+    public bool EnableCorrelationId { get; set; } = true;
+
+    /// <summary>
+    /// Minimum log level. Default is "Information".
+    /// </summary>
+    public string MinimumLevel { get; set; } = "Information";
+
+    /// <summary>
+    /// Log level overrides for specific namespaces.
+    /// </summary>
+    public Dictionary<string, string> LogLevelOverrides { get; set; } = new()
+    {
+        ["Microsoft"] = "Warning",
+        ["System"] = "Warning"
+    };
+}

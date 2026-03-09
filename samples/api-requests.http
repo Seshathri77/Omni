@@ -1,0 +1,213 @@
+# Sample API Requests for eCommerce Demo
+# Use with REST Client extension in VS Code or import into Postman
+
+### Variables
+@orderServiceUrl = http://localhost:5001
+@paymentServiceUrl = http://localhost:5002
+
+### Create Order - Success Scenario
+POST {{orderServiceUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "customerId": "CUST-001",
+  "items": [
+    {
+      "productId": "LAPTOP-XPS15",
+      "productName": "Dell XPS 15",
+      "quantity": 1,
+      "unitPrice": 1299.99
+    }
+  ],
+  "totalAmount": 1299.99,
+  "shippingAddress": {
+    "street": "123 Tech Street",
+    "city": "San Francisco",
+    "state": "CA",
+    "zipCode": "94105",
+    "country": "USA"
+  }
+}
+
+### Create Order - Multiple Items
+POST {{orderServiceUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "customerId": "CUST-002",
+  "items": [
+    {
+      "productId": "PHONE-IPHONE15",
+      "productName": "iPhone 15 Pro",
+      "quantity": 2,
+      "unitPrice": 999.99
+    },
+    {
+      "productId": "CASE-LEATHER",
+      "productName": "Leather Case",
+      "quantity": 2,
+      "unitPrice": 49.99
+    }
+  ],
+  "totalAmount": 2099.96,
+  "shippingAddress": {
+    "street": "456 Mobile Ave",
+    "city": "New York",
+    "state": "NY",
+    "zipCode": "10001",
+    "country": "USA"
+  }
+}
+
+### Create Order - High Value
+POST {{orderServiceUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "customerId": "CUST-VIP-001",
+  "items": [
+    {
+      "productId": "MACBOOK-PRO",
+      "productName": "MacBook Pro 16-inch",
+      "quantity": 5,
+      "unitPrice": 2499.99
+    }
+  ],
+  "totalAmount": 12499.95,
+  "shippingAddress": {
+    "street": "789 Enterprise Blvd",
+    "city": "Seattle",
+    "state": "WA",
+    "zipCode": "98101",
+    "country": "USA"
+  }
+}
+
+### Cancel Order (replace {orderId} with actual order ID)
+POST {{orderServiceUrl}}/api/orders/{orderId}/cancel
+Content-Type: application/json
+
+{
+  "reason": "Customer requested cancellation"
+}
+
+### Get Order Status (replace {orderId} with actual order ID)
+GET {{orderServiceUrl}}/api/orders/{orderId}
+
+### Health Check - Order Service
+GET {{orderServiceUrl}}/health
+
+### Health Check - Payment Service
+GET {{paymentServiceUrl}}/health
+
+### Create 10 Orders (for testing payment failures - ~1 will fail)
+# This demonstrates the 90% success rate and saga compensation
+
+POST {{orderServiceUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "customerId": "CUST-TEST-001",
+  "items": [{"productId": "TEST-001", "productName": "Test Product", "quantity": 1, "unitPrice": 99.99}],
+  "totalAmount": 99.99,
+  "shippingAddress": {"street": "Test St", "city": "Test City", "state": "CA", "zipCode": "12345", "country": "USA"}
+}
+
+###
+POST {{orderServiceUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "customerId": "CUST-TEST-002",
+  "items": [{"productId": "TEST-001", "productName": "Test Product", "quantity": 1, "unitPrice": 99.99}],
+  "totalAmount": 99.99,
+  "shippingAddress": {"street": "Test St", "city": "Test City", "state": "CA", "zipCode": "12345", "country": "USA"}
+}
+
+###
+POST {{orderServiceUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "customerId": "CUST-TEST-003",
+  "items": [{"productId": "TEST-001", "productName": "Test Product", "quantity": 1, "unitPrice": 99.99}],
+  "totalAmount": 99.99,
+  "shippingAddress": {"street": "Test St", "city": "Test City", "state": "CA", "zipCode": "12345", "country": "USA"}
+}
+
+###
+POST {{orderServiceUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "customerId": "CUST-TEST-004",
+  "items": [{"productId": "TEST-001", "productName": "Test Product", "quantity": 1, "unitPrice": 99.99}],
+  "totalAmount": 99.99,
+  "shippingAddress": {"street": "Test St", "city": "Test City", "state": "CA", "zipCode": "12345", "country": "USA"}
+}
+
+###
+POST {{orderServiceUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "customerId": "CUST-TEST-005",
+  "items": [{"productId": "TEST-001", "productName": "Test Product", "quantity": 1, "unitPrice": 99.99}],
+  "totalAmount": 99.99,
+  "shippingAddress": {"street": "Test St", "city": "Test City", "state": "CA", "zipCode": "12345", "country": "USA"}
+}
+
+###
+POST {{orderServiceUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "customerId": "CUST-TEST-006",
+  "items": [{"productId": "TEST-001", "productName": "Test Product", "quantity": 1, "unitPrice": 99.99}],
+  "totalAmount": 99.99,
+  "shippingAddress": {"street": "Test St", "city": "Test City", "state": "CA", "zipCode": "12345", "country": "USA"}
+}
+
+###
+POST {{orderServiceUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "customerId": "CUST-TEST-007",
+  "items": [{"productId": "TEST-001", "productName": "Test Product", "quantity": 1, "unitPrice": 99.99}],
+  "totalAmount": 99.99,
+  "shippingAddress": {"street": "Test St", "city": "Test City", "state": "CA", "zipCode": "12345", "country": "USA"}
+}
+
+###
+POST {{orderServiceUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "customerId": "CUST-TEST-008",
+  "items": [{"productId": "TEST-001", "productName": "Test Product", "quantity": 1, "unitPrice": 99.99}],
+  "totalAmount": 99.99,
+  "shippingAddress": {"street": "Test St", "city": "Test City", "state": "CA", "zipCode": "12345", "country": "USA"}
+}
+
+###
+POST {{orderServiceUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "customerId": "CUST-TEST-009",
+  "items": [{"productId": "TEST-001", "productName": "Test Product", "quantity": 1, "unitPrice": 99.99}],
+  "totalAmount": 99.99,
+  "shippingAddress": {"street": "Test St", "city": "Test City", "state": "CA", "zipCode": "12345", "country": "USA"}
+}
+
+###
+POST {{orderServiceUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "customerId": "CUST-TEST-010",
+  "items": [{"productId": "TEST-001", "productName": "Test Product", "quantity": 1, "unitPrice": 99.99}],
+  "totalAmount": 99.99,
+  "shippingAddress": {"street": "Test St", "city": "Test City", "state": "CA", "zipCode": "12345", "country": "USA"}
+}
