@@ -42,9 +42,22 @@ public sealed class MessageContext
         new Dictionary<string, string>();
 
     /// <summary>
+    /// Cancellation token for message processing.
+    /// </summary>
+    public CancellationToken CancellationToken { get; init; } = default;
+
+    /// <summary>
     /// Creates a context from a message envelope.
     /// </summary>
     public static MessageContext FromEnvelope<T>(MessageEnvelope<T> envelope, CancellationToken cancellationToken = default) where T : class
+    {
+        return FromEnvelope(envelope, CancellationToken.None);
+    }
+
+    /// <summary>
+    /// Creates a context from a message envelope with a cancellation token.
+    /// </summary>
+    public static MessageContext FromEnvelope<T>(MessageEnvelope<T> envelope, CancellationToken cancellationToken) where T : class
     {
         return new MessageContext
         {

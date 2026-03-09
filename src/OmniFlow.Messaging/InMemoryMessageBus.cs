@@ -47,12 +47,10 @@ public class InMemoryMessageBus : IMessageBus
             return;
         }
 
-        var context = MessageContext.FromEnvelope(envelope);
-
         foreach (var handler in handlers.ToList())
         {
             var typedHandler = (Func<MessageEnvelope<T>, MessageContext, Task>)handler;
-            await ExecuteWithMiddleware(envelope, context, () => typedHandler(envelope, context), cancellationToken);
+            await ExecuteWithMiddleware(envelope, typedHandler, cancellationToken);
         }
     }
 
@@ -83,11 +81,13 @@ public class InMemoryMessageBus : IMessageBus
 
     private async Task ExecuteWithMiddleware<T>(
         MessageEnvelope<T> envelope,
-        MessageContext context,
-        Func<Task> handler,
+        Func<MessageEnvelope<T>, MessageContext, Task> handler,
         CancellationToken cancellationToken) where T : class
     {
-        Func<Task> pipeline = handler;
+        // Create context with the cancellation token
+        var context = MessageContext.FromEnvelope(envelope, cancellationToken);
+
+        Func<Task> pipeline = () => handler(envelope, context);
 
         // Build middleware pipeline in reverse order
         for (int i = _middlewares.Count - 1; i >= 0; i--)

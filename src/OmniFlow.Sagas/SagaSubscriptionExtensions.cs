@@ -27,7 +27,7 @@ public static class SagaSubscriptionExtensions
         {
             var saga = ActivatorUtilities.CreateInstance<TSaga>(serviceProvider);
             saga.Initialize(repository, messageBus, timerService);
-            await handler(saga, envelope.Message, CancellationToken.None);
+            await handler(saga, envelope.Message, context.CancellationToken);
         });
     }
 
@@ -52,9 +52,9 @@ public static class SagaSubscriptionExtensions
             saga.Initialize(repository, messageBus, timerService);
 
             var sagaId = getSagaId(envelope.Message);
-            if (await saga.LoadAsync(sagaId, CancellationToken.None))
+            if (await saga.LoadAsync(sagaId, context.CancellationToken))
             {
-                await handler(saga, envelope.Message, CancellationToken.None);
+                await handler(saga, envelope.Message, context.CancellationToken);
             }
         });
     }
