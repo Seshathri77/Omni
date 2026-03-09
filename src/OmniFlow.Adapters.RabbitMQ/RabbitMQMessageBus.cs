@@ -109,7 +109,7 @@ public class RabbitMQMessageBus : IMessageBus, IDisposable
 
                 if (envelope != null)
                 {
-                    var context = MessageContext.FromEnvelope(envelope);
+                    var context = MessageContext.FromEnvelope(envelope, cancellationToken);
                     await handler(envelope, context);
                     _channel.BasicAck(ea.DeliveryTag, false);
 

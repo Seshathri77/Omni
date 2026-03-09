@@ -106,7 +106,7 @@ public class ServiceBusMessageBus : IMessageBus, IAsyncDisposable
 
                 if (envelope != null)
                 {
-                    var context = MessageContext.FromEnvelope(envelope);
+                    var context = MessageContext.FromEnvelope(envelope, cancellationToken);
                     
                     try
                     {

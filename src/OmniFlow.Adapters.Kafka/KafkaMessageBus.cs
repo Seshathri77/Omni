@@ -137,7 +137,7 @@ public class KafkaMessageBus : IMessageBus, IDisposable
 
                     if (envelope != null)
                     {
-                        var context = MessageContext.FromEnvelope(envelope);
+                        var context = MessageContext.FromEnvelope(envelope, cancellationToken);
                         
                         try
                         {
