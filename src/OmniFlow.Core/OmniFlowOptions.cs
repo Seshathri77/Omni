@@ -44,7 +44,7 @@ public class OmniFlowOptions
     public ObservabilityOptions Observability { get; set; } = new();
 
     /// <summary>
-    /// Saga types to register. Use RegisterSaga<TSaga, TState>() to add sagas.
+    /// Saga types to register. Use <c>RegisterSaga&lt;TSaga, TState&gt;()</c> to add sagas.
     /// </summary>
     public List<(Type SagaType, Type StateType)> SagaRegistrations { get; } = new();
 

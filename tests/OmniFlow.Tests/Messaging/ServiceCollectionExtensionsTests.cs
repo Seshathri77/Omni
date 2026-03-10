@@ -543,7 +543,6 @@ public class ServiceCollectionExtensionsTests
         // Arrange
         var services = new ServiceCollection();
         services.AddLogging();
-        var tracingConfigured = false;
 
         // Act
         services.AddOmniFlow(options =>
@@ -553,7 +552,6 @@ public class ServiceCollectionExtensionsTests
             options.EnableObservability = true;
             options.Observability.ConfigureTracing = builder =>
             {
-                tracingConfigured = true;
             };
             options.EnableSagas = false;
             options.EnableIdempotency = false;

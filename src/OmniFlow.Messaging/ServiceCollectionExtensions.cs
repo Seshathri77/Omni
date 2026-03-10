@@ -153,7 +153,13 @@ public static class ServiceCollectionExtensions
                 }
                 else if (options.Observability.ConfigureTracing != null)
                 {
-                    tracingConfig = builder => options.Observability.ConfigureTracing(builder as OpenTelemetry.Trace.TracerProviderBuilder);
+                    tracingConfig = builder =>
+                    {
+                        if (builder is OpenTelemetry.Trace.TracerProviderBuilder tracerBuilder)
+                        {
+                            options.Observability.ConfigureTracing(tracerBuilder);
+                        }
+                    };
                 }
 
                 method?.Invoke(null, new object?[] 
