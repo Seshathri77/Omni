@@ -5,6 +5,10 @@ global:
     cluster: 'ecommerce'
     environment: 'development'
 
+# Load alerting rules
+rule_files:
+  - 'prometheus-alerts.yml'
+
 scrape_configs:
   # Order Service metrics
   - job_name: 'order-service'

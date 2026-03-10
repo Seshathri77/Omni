@@ -4,6 +4,7 @@ using OmniFlow.Core;
 using OmniFlow.Messaging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using RabbitMQ.Client.Exceptions;
 using System.Text;
 using System.Text.Json;
 
@@ -12,7 +13,7 @@ namespace OmniFlow.Adapters.RabbitMQ;
 /// <summary>
 /// RabbitMQ implementation of IMessageBus with Dead Letter Queue support.
 /// </summary>
-public class RabbitMQMessageBus : IMessageBus, IDisposable
+public class RabbitMQMessageBus : IMessageBus, IHealthCheckable, IDisposable
 {
     private readonly RabbitMQOptions _options;
     private readonly ICorrelationAccessor _correlationAccessor;
@@ -297,6 +298,45 @@ public class RabbitMQMessageBus : IMessageBus, IDisposable
 
     private string GetRoutingKey<T>() => typeof(T).Name.ToLowerInvariant();
     private string GetQueueName<T>() => $"{_options.ServiceName}.{typeof(T).Name}";
+
+    public Task<bool> CheckHealthAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Check if connection and channel are open
+            if (_connection == null || !_connection.IsOpen)
+            {
+                return Task.FromResult(false);
+            }
+
+            if (_channel == null || !_channel.IsOpen)
+            {
+                return Task.FromResult(false);
+            }
+
+            // Perform a lightweight operation to verify connectivity
+            // QueueDeclarePassive throws if queue doesn't exist, which is fine
+            // We're just checking if we can communicate with RabbitMQ
+            try
+            {
+                // Use a temp queue name that won't conflict
+                var testQueueName = $"health-check-{Guid.NewGuid():N}";
+                _channel.QueueDeclarePassive(testQueueName);
+            }
+            catch (OperationInterruptedException)
+            {
+                // Expected if queue doesn't exist - connection is still healthy
+                return Task.FromResult(true);
+            }
+
+            return Task.FromResult(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "RabbitMQ health check failed");
+            return Task.FromResult(false);
+        }
+    }
 
     public void Dispose()
     {
