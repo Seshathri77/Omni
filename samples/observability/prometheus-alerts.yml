@@ -1,0 +1,220 @@
+groups:
+  - name: omniflow_sagas
+    interval: 30s
+    rules:
+      # High saga failure rate
+      - alert: HighSagaFailureRate
+        expr: |
+          (
+            sum(rate(omniflow_sagas_failed_total[5m]))
+            /
+            (sum(rate(omniflow_sagas_completed_total[5m])) + sum(rate(omniflow_sagas_failed_total[5m])) + sum(rate(omniflow_sagas_compensated_total[5m])))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: saga
+        annotations:
+          summary: "High saga failure rate detected"
+          description: "Saga failure rate is {{ $value | humanizePercentage }} over the last 5 minutes (threshold: 5%)"
+
+      # Critical saga failure rate
+      - alert: CriticalSagaFailureRate
+        expr: |
+          (
+            sum(rate(omniflow_sagas_failed_total[5m]))
+            /
+            (sum(rate(omniflow_sagas_completed_total[5m])) + sum(rate(omniflow_sagas_failed_total[5m])) + sum(rate(omniflow_sagas_compensated_total[5m])))
+          ) > 0.20
+        for: 2m
+        labels:
+          severity: critical
+          component: saga
+        annotations:
+          summary: "CRITICAL: Very high saga failure rate"
+          description: "Saga failure rate is {{ $value | humanizePercentage }} over the last 5 minutes (threshold: 20%)"
+
+      # High compensation rate indicates business logic issues
+      - alert: HighSagaCompensationRate
+        expr: |
+          (
+            sum(rate(omniflow_sagas_compensated_total[10m]))
+            /
+            sum(rate(omniflow_sagas_started_total[10m]))
+          ) > 0.10
+        for: 10m
+        labels:
+          severity: warning
+          component: saga
+        annotations:
+          summary: "High saga compensation rate"
+          description: "{{ $value | humanizePercentage }} of sagas are being compensated (threshold: 10%). Check for transient failures or business logic issues."
+
+      # Slow saga execution
+      - alert: SlowSagaExecution
+        expr: |
+          histogram_quantile(0.95, sum(rate(omniflow_sagas_duration_bucket[5m])) by (le, saga_type)) > 5000
+        for: 5m
+        labels:
+          severity: warning
+          component: saga
+        annotations:
+          summary: "Slow saga execution detected"
+          description: "P95 saga duration for {{ $labels.saga_type }} is {{ $value | humanizeDuration }} (threshold: 5s)"
+
+      # Too many active sagas
+      - alert: HighActiveSagaCount
+        expr: |
+          omniflow_sagas_active > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: saga
+        annotations:
+          summary: "High number of active sagas"
+          description: "{{ $value }} sagas are currently active (threshold: 1000). May indicate processing backlog."
+
+      # No saga activity (possible system failure)
+      - alert: NoSagaActivity
+        expr: |
+          rate(omniflow_sagas_started_total[5m]) == 0
+        for: 10m
+        labels:
+          severity: critical
+          component: saga
+        annotations:
+          summary: "No saga activity detected"
+          description: "No sagas have been started in the last 10 minutes. System may be down or not receiving requests."
+
+  - name: omniflow_messages
+    interval: 30s
+    rules:
+      # High message failure rate
+      - alert: HighMessageFailureRate
+        expr: |
+          (
+            sum(rate(omniflow_messages_failed_total[5m]))
+            /
+            (sum(rate(omniflow_messages_processed_total[5m])) + sum(rate(omniflow_messages_failed_total[5m])))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: messaging
+        annotations:
+          summary: "High message failure rate"
+          description: "{{ $value | humanizePercentage }} of messages are failing (threshold: 5%)"
+
+      # Circuit breaker opened
+      - alert: CircuitBreakerOpened
+        expr: |
+          increase(omniflow_circuit_breaker_opened_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          component: messaging
+        annotations:
+          summary: "Circuit breaker opened"
+          description: "Circuit breaker has opened {{ $value }} time(s) in the last 5 minutes for {{ $labels.message_type }}"
+
+      # High retry rate
+      - alert: HighMessageRetryRate
+        expr: |
+          (
+            sum(rate(omniflow_messages_retried_total[5m]))
+            /
+            sum(rate(omniflow_messages_published_total[5m]))
+          ) > 0.20
+        for: 5m
+        labels:
+          severity: warning
+          component: messaging
+        annotations:
+          summary: "High message retry rate"
+          description: "{{ $value | humanizePercentage }} of messages are being retried (threshold: 20%)"
+
+      # Excessive duplicate messages
+      - alert: HighDuplicateMessageRate
+        expr: |
+          (
+            sum(rate(omniflow_idempotency_duplicates_detected_total[5m]))
+            /
+            sum(rate(omniflow_messages_published_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: info
+          component: messaging
+        annotations:
+          summary: "High duplicate message rate"
+          description: "{{ $value | humanizePercentage }} of messages are duplicates (threshold: 5%). Check message producers for duplicate sends."
+
+  - name: omniflow_repository
+    interval: 30s
+    rules:
+      # High repository error rate
+      - alert: HighRepositoryErrorRate
+        expr: |
+          (
+            sum(rate(omniflow_repository_errors_total[5m]))
+            /
+            sum(rate(omniflow_repository_operations_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: repository
+        annotations:
+          summary: "High repository error rate"
+          description: "{{ $value | humanizePercentage }} of repository operations are failing (threshold: 5%)"
+
+      # High optimistic concurrency failures
+      - alert: HighConcurrencyConflicts
+        expr: |
+          sum(rate(omniflow_repository_concurrency_failures_total[5m])) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: repository
+        annotations:
+          summary: "High optimistic concurrency conflict rate"
+          description: "{{ $value }} concurrency conflicts per second. May indicate high contention or insufficient retry logic."
+
+  - name: omniflow_health
+    interval: 30s
+    rules:
+      # Service down
+      - alert: ServiceDown
+        expr: |
+          up{job=~".*-service"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: health
+        annotations:
+          summary: "Service is down"
+          description: "{{ $labels.job }} has been down for more than 2 minutes"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: |
+          (process_working_set_bytes / 1024 / 1024 / 1024) > 2
+        for: 5m
+        labels:
+          severity: warning
+          component: health
+        annotations:
+          summary: "High memory usage"
+          description: "Service is using {{ $value | humanize }}GB of memory (threshold: 2GB)"
+
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: |
+          rate(process_cpu_seconds_total[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          component: health
+        annotations:
+          summary: "High CPU usage"
+          description: "Service CPU usage is {{ $value | humanizePercentage }} (threshold: 80%)"

@@ -5,7 +5,8 @@ namespace OmniFlow.Sagas;
 /// <summary>
 /// In-memory saga repository for testing and development.
 /// </summary>
-public class InMemorySagaRepository<TState> : ISagaRepository<TState> where TState : SagaState
+public class InMemorySagaRepository<TState> : ISagaRepository<TState>, ISagaRepositoryHealthCheckable 
+    where TState : SagaState
 {
     private readonly ConcurrentDictionary<string, (TState State, int Version)> _store = new();
 
@@ -46,5 +47,11 @@ public class InMemorySagaRepository<TState> : ISagaRepository<TState> where TSta
             .Select(kvp => kvp.Key);
         
         return Task.FromResult(matches);
+    }
+
+    public Task<bool> CheckHealthAsync(CancellationToken cancellationToken = default)
+    {
+        // In-memory repository is always healthy if reachable
+        return Task.FromResult(true);
     }
 }
