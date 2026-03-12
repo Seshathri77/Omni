@@ -1,7 +1,7 @@
 ﻿# 🌊 OmniFlow Framework
 
-[![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/download)
-[![C#](https://img.shields.io/badge/C%23-12.0-blue.svg)](https://docs.microsoft.com/en-us/dotnet/csharp/)
+[![.NET](https://img.shields.io/badge/.NET-8.0%2B-purple.svg)](https://dotnet.microsoft.com/download)
+[![C#](https://img.shields.io/badge/C%23-latest-blue.svg)](https://docs.microsoft.com/en-us/dotnet/csharp/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/Seshathri77/Omni)
 
@@ -67,6 +67,8 @@ dotnet add package OmniFlow.Observability
 
 # Adapters (choose based on your needs)
 dotnet add package OmniFlow.Adapters.RabbitMQ
+dotnet add package OmniFlow.Adapters.Kafka
+dotnet add package OmniFlow.Adapters.ServiceBus
 dotnet add package OmniFlow.Adapters.Sql
 dotnet add package OmniFlow.Adapters.MongoDb
 
@@ -77,7 +79,7 @@ dotnet tool install --global OmniFlow.Tools.Cli
 ### Supported Versions
 
 - **.NET:** 8.0 or later
-- **C#:** 12.0 or later
+- **C#:** latest
 
 ---
 
@@ -216,7 +218,7 @@ options.MessageBus.RabbitMQ = new RabbitMQConfig
 };
 ```
 
-#### Kafka (Coming Soon)
+#### Kafka
 
 ```csharp
 options.MessageBus.Provider = MessageBusProvider.Kafka;
@@ -224,8 +226,25 @@ options.MessageBus.Kafka = new KafkaConfig
 {
     BootstrapServers = "kafka1:9092,kafka2:9092",
     GroupId = "my-group",
+    TopicPrefix = "omniflow",
     SecurityProtocol = "SASL_SSL",
-    SaslMechanism = "SCRAM-SHA-256"
+    SaslMechanism = "SCRAM-SHA-256",
+    SaslUsername = "user",
+    SaslPassword = "password"
+};
+```
+
+#### Azure Service Bus
+
+```csharp
+options.MessageBus.Provider = MessageBusProvider.ServiceBus;
+options.MessageBus.ServiceBus = new ServiceBusConfig
+{
+    ConnectionString = "Endpoint=sb://your-namespace.servicebus.windows.net/;...",
+    TopicName = "omniflow-events",
+    SubscriptionName = "my-service",
+    MaxDeliveryCount = 3,
+    MessageTimeToLive = TimeSpan.FromDays(7)
 };
 ```
 
@@ -563,18 +582,23 @@ public class RedisSagaRepository<TState> : ISagaRepository<TState>
 ```
 OmniFlow/
 ├── src/
-│   ├── OmniFlow.Core                 # Core primitives
-│   ├── OmniFlow.Messaging            # Message bus + middleware
-│   ├── OmniFlow.Sagas                # Saga engine
-│   ├── OmniFlow.Idempotency          # Idempotency store
-│   ├── OmniFlow.Observability        # OpenTelemetry
-│   ├── OmniFlow.Adapters.RabbitMQ    # RabbitMQ adapter
-│   ├── OmniFlow.Adapters.Sql         # SQL persistence
-│   ├── OmniFlow.Adapters.MongoDb     # MongoDB persistence
-│   └── OmniFlow.Tools.Cli            # CLI tools
+│   ├── OmniFlow.Core                  # Core primitives
+│   ├── OmniFlow.Messaging             # Message bus + middleware
+│   ├── OmniFlow.Sagas                 # Saga engine
+│   ├── OmniFlow.Idempotency           # Idempotency store
+│   ├── OmniFlow.Observability         # OpenTelemetry + Serilog
+│   ├── OmniFlow.Adapters.RabbitMQ     # RabbitMQ adapter
+│   ├── OmniFlow.Adapters.Kafka        # Apache Kafka adapter
+│   ├── OmniFlow.Adapters.ServiceBus   # Azure Service Bus adapter
+│   ├── OmniFlow.Adapters.Sql          # SQL persistence
+│   ├── OmniFlow.Adapters.MongoDb      # MongoDB persistence
+│   └── OmniFlow.Tools.Cli             # CLI tools
 ├── samples/
-│   ├── OrdersService
-│   └── PaymentsService
+│   ├── ECommerce.AppHost              # .NET Aspire orchestration host
+│   ├── ECommerce.Contracts            # Shared messages and events
+│   ├── ECommerce.OrderService         # Order management service
+│   ├── ECommerce.PaymentService       # Payment processing service
+│   └── ECommerce.ServiceDefaults      # Shared Aspire service defaults
 └── tests/
     └── OmniFlow.Tests
 ```
@@ -758,16 +782,29 @@ dotnet build
 dotnet test
 ```
 
-### Docker Compose
+### Running the E-Commerce Sample
+
+The sample uses [.NET Aspire](https://learn.microsoft.com/en-us/dotnet/aspire/) to orchestrate all services:
 
 ```bash
-docker-compose up -d
+cd samples/ECommerce.AppHost
+dotnet run
+# Aspire Dashboard: http://localhost:15888
+```
+
+### Docker Compose (Observability Stack)
+
+```bash
+# Observability infrastructure
+docker-compose -f docker-compose-observability.yml up -d
 
 # Services:
-# - RabbitMQ: http://localhost:15672
 # - Jaeger: http://localhost:16686
-# - Seq: http://localhost:5341
 # - Prometheus: http://localhost:9090
+
+# Full sample stack
+docker-compose -f samples/docker-compose.yml up -d
+# - RabbitMQ Management: http://localhost:15672
 ```
 
 ---
@@ -797,11 +834,12 @@ MIT License - see [LICENSE](LICENSE) file.
 
 ## 🗺️ Roadmap
 
-- [ ] Kafka adapter
-- [ ] Azure Service Bus adapter
+- [x] Kafka adapter
+- [x] Azure Service Bus adapter
 - [ ] Saga visualization UI
 - [ ] Schema evolution
 - [ ] Helm charts for Kubernetes
+- [ ] NuGet package publishing
 
 ---
 

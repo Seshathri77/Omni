@@ -19,6 +19,7 @@ var jaeger = builder.AddContainer("jaeger", "jaegertracing/all-in-one", "latest"
 
 var prometheus = builder.AddContainer("prometheus", "prom/prometheus", "latest")
     .WithBindMount("../observability/prometheus.yml", "/etc/prometheus/prometheus.yml")
+    .WithBindMount("../observability/prometheus-alerts.yml", "/etc/prometheus/prometheus-alerts.yml")
     .WithHttpEndpoint(port: 9090, targetPort: 9090, name: "ui");
 
 var grafana = builder.AddContainer("grafana", "grafana/grafana", "latest")
